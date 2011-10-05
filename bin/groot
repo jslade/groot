@@ -1,0 +1,18 @@
+#!/bin/sh
+# -*-python-*-
+# This entry-point script just finds the location of the rest of the groot files
+# and loads the main boot-up class
+#
+magic='--calling-python-from-/bin/sh--'
+"""exec" python -E "$0" "$@" """#$magic"
+if __name__ == '__main__':
+  import os, inspect, sys
+  if sys.argv[-1] == '#%s' % magic:
+    del sys.argv[-1]
+
+  GROOT_ROOT=os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))
+  sys.path.insert(0,os.path.join(GROOT_ROOT,"lib","groot"))
+
+  import groot.boot
+  groot.boot.Groot().main(sys.argv[1:])
+
