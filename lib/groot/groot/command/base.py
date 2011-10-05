@@ -57,4 +57,19 @@ class BaseCommand(object):
         """ Return an array Repo instances representing the child repositories """
         repo = self.get_repo()
         return repo.get_submodules()
-        
+
+
+    def which_submodule(self,path):
+        """ Return the submodule that the given path maps into. Also returns the path relative
+            to the matched submodule.
+            
+            If it is not a submodule path, returns None """
+
+        for subm in self.get_submodules():
+            rel_path = subm.relative_path(path)
+            if rel_path:
+                return (subm,rel_path)
+
+        return None
+
+

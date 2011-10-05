@@ -1,4 +1,5 @@
 
+from add import *
 from checkout import *
 from clone import *
 from help import *

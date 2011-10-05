@@ -1,4 +1,3 @@
-
 import os
 import subprocess
 
@@ -53,7 +52,7 @@ class Repo(object):
 
 
     def banner(self,msg=None):
-        self.groot.log("\n# ---[ %s ]---" % (self.path))
+        self.groot.log("\n# ---[ %s ]---" % (self.banner_path()))
         if msg:
             self.groot.log(msg)
 
@@ -61,6 +60,10 @@ class Repo(object):
     def footer(self,msg=''):
         self.groot.log(msg)
 
+
+    def banner_path(self):
+        return self.path
+    
 
     def checkout(self,commit,**kwargs):
         git_command = ['checkout']
@@ -79,7 +82,7 @@ class Repo(object):
     def current_branch(self):
         return self.git.current_branch()
     
-        
+
 
 class Submodule(Repo):
     """ Subclass of Repo representing a submodule """
@@ -103,6 +106,13 @@ class Submodule(Repo):
             self.branch = 'master'
 
 
+    def __repr__(self):
+        return '[submodule "%s"]' % (self.rel_path)
+
+
+    def banner_path(self):
+        return self.rel_path
+    
 
     def preferred_branch(self):
         """ Returns the name of the branch that is 'preferred' for this submodule,
@@ -148,3 +158,18 @@ class Submodule(Repo):
         return True
 
     
+
+    def relative_path(self,path):
+        """ Return the portion of the given path relative to this submodule's path """
+        if not path.startswith(self.rel_path):
+            return None
+
+        path = path[len(self.rel_path):]
+        if path == '': path = '.'
+        if path.endswith('/'): path = path[:-1]
+        if path.startswith('/'): path = path[1:]
+
+        return path
+
+
+            

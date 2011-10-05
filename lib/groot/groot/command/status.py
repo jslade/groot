@@ -18,7 +18,8 @@ class Status(BaseCommand):
 
     def parse_args(self,args):
         op = OptionParser()
-        op.add_option("--short", action="store_true", dest="short")
+        op.add_option("--short","-s", action="store_true", dest="short")
+        op.add_option("--verbose","-v", action="store_true", dest="verbose")
 
         self.options, self.args = op.parse_args(args)
         
@@ -58,7 +59,9 @@ class Status(BaseCommand):
         cmd.extend(args)
         stdout = subm.do_git(cmd,capture=True,tty=True)
 
-        if stdout and not self.submodule_is_clean(stdout):
+        if stdout and \
+               (self.options.verbose or \
+                not self.submodule_is_clean(stdout)):
             subm.banner()
             print stdout
 
