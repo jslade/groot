@@ -12,6 +12,12 @@ shift
 $cmd ${1+"$@"}
 ret=$?
 
-echo $marker
+trap continue PIPE # reduce broken pipe warnings
+
+echo $marker:$ret
+for i in 1 2 3 4 5; do
+    echo $marker:$ret
+    sleep 1
+done
 
 exit $ret

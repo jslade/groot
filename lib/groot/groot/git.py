@@ -37,8 +37,10 @@ class Git(object):
     def do_command(self,git_command,**kwargs):
         self.groot.debug("# In %s: %s" % (self.path,' '.join(git_command)))
 
+        # Run the command in the root directory of the git repo
         cd = safe_chdir(self.path)
 
+        # Set up the command line and args for creating the subprocess
         call_args = {}
         if 'capture' in kwargs and kwargs['capture']:
             call_args['stdout'] = subprocess.PIPE
@@ -46,14 +48,22 @@ class Git(object):
             call_args['stdout'] = subprocess.PIPE
             call_args['stderr'] = subprocess.PIPE
 
+        # Execute the command as a subprocess
         if 'tty' in kwargs and kwargs['tty']:
             stdout, stderr, returncode = self.do_command_with_tty(git_command,**call_args)
         else:
             stdout, stderr, returncode = self.do_command_with_pipes(git_command,**call_args)
         self.last_result = (stdout,stderr,returncode)
-        if returncode != 0:
+
+        # Check the result of the command
+        expected_returncode=[0]
+        if 'expected_returncode' in kwargs:
+            expected_returncode=kwargs['expected_returncode']
+        if type(expected_returncode) != type([]): expected_returncode=[expected_returncode]
+        if not returncode in expected_returncode:
             raise GitCommandError(self.path,git_command)
 
+        # Some debugging output
         if self.groot.debug_mode:
             if stderr:
                 for line in stderr.rstrip().split('\n'):
@@ -61,6 +71,8 @@ class Git(object):
             if stdout:
                 for line in stdout.rstrip().split('\n'):
                     self.groot.debug("--> %s" % line)
+
+        # Always returns stdout, which will be empty if capture=False
         return stdout
 
 
@@ -89,7 +101,8 @@ class Git(object):
         # the end of output so it doesn't try to read (and block) forever:
         wrapper = os.path.join(os.path.dirname(inspect.getfile(inspect.currentframe())),'git-wrapper.sh')
         marker = '___EOF:%s___' % (os.getpid())
-
+        re_marker = re.compile(r'%s:([0-9]+)' % (marker))
+        
         p = subprocess.Popen([wrapper,marker]+git_command,**call_args)
 
         stdout = ''
@@ -97,18 +110,22 @@ class Git(object):
 
         monitor = [master]
         nop = []
+        returncode = None
         
         while monitor:
             fds = select.select(monitor,nop,nop)[0]
             if master in fds:
                 line = master_fh.readline()
-                if re.match(marker,line):
+                m = re_marker.search(line)
+                if m:
                     monitor.remove(master)
+                    returncode = int(m.group(1))
+                    p.kill()
                 else:
                     stdout += line
 
         p.wait()
-        return (stdout, stderr, p.returncode)
+        return (stdout, stderr, returncode)
     
 
     def do_command_with_pipes(self,git_command,**call_args):

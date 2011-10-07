@@ -1,5 +1,6 @@
 
 from optparse import OptionParser
+import re
 
 from groot.err import *
 
@@ -31,14 +32,26 @@ class Checkout(BaseCommand):
         self.commit = self.options.new_branch
         if self.commit:
             self.options.new_branch = True
-        else:
-            self.commit = args[0]
-            self.options.new_branch = False
+        elif len(args):
+            if not self.is_path(args[0]):
+                self.commit = args.pop(0)
+                self.options.new_branch = False
+
         if not self.commit:
             raise InvalidUsage("Missing branch/commit name")
 
         # Any remaining args are specific submodules to checkout
-        self.target_submodules = args[1:]
+        # TODO: perhaps they should be treated as pathspecs, and need to be mapped
+        # to specific submodules
+        self.target_submodules = args
+
+        self.groot.debug("commit options=%s" % (self.options))
+        self.groot.debug("commit commit=%s" % (self.commit))
+        self.groot.debug("commit submodules=%s" % (self.target_submodules))
+        
+
+    def is_path(self,pathspec):
+        if re.search('/',pathspec): return True
         
         
     def requires_repo(self):
@@ -83,8 +96,8 @@ class Checkout(BaseCommand):
                    'track': self.options.track,
                    'force': self.options.force }
         root.checkout(self.commit,**kwargs)
-        
 
+        
     def update_submodule(self,subm):
         if self.options.no_update:
             self.groot.log("# Not updating submodule: %s" % (subm.rel_path))

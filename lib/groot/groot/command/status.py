@@ -67,6 +67,9 @@ class Status(BaseCommand):
 
 
     def submodule_is_clean(self,stdout):
+        m = re.search("Not currently on any branch",stdout)
+        if m: return False
+        
         m = re.search("nothing to commit \(working directory clean\)",stdout)
         if m: return True
 

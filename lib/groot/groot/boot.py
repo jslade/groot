@@ -18,6 +18,8 @@ class Groot(object):
     self.quiet = False
     self.debug_mode = False
 
+    self.log_deferred = []
+    
 
   def main(self,argv):
     self.parse_args(argv)
@@ -35,25 +37,48 @@ class Groot(object):
     if self.command.requires_repo():
       try: self.find_repo()
       except RepoNotFound, ex:
-        self.fatal(ex.message)
+        self.fatal(ex)
     self.command.run()
   
 
-  def log(self,msg):
+  def log(self,msg,deferred=False):
     if not self.quiet:
-      print(msg)
+      if deferred:
+        self.log_deferred.append((sys.stdout,msg))
+      else:
+        print(msg)
       
-  def debug(self,msg):
+  def debug(self,msg,deferred=False):
     if self.debug_mode:
-      print(msg)
+      if deferred:
+        self.log_deferred.append((sys.stdout,msg))
+      else:
+        print(msg)
       
-  def warning(self,msg):
-    print >> sys.stderr, msg
+  def warning(self,msg,deferred=False):
+    if deferred:
+      self.log_deferred.append((sys.stderr,msg))
+    else:
+      print >> sys.stderr, msg
       
-  def error(self,msg):
-    print >> sys.stderr, msg
+  def error(self,msg,deferred=False):
+    if deferred:
+      self.log_deferred.append((sys.stderr,msg))
+    else:
+      print >> sys.stderr, msg
       
 
+  def clear_log(self):
+    self.log_deferred = []
+
+
+  def flush_log(self):
+    for log in self.log_deferred:
+      fh, msg = log
+      print >> fh, msg
+    self.clear_log()
+    
+      
   def find_repo(self):
     """Look for a groot-managed repository, starting at the current directory.
     """

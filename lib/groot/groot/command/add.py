@@ -11,41 +11,24 @@ class Add(BaseCommand):
         return True
         
 
-    def run(self):
-        map,opts = self.map_args_to_submodules()
-        self.add_per_submodule(map,opts)
+    def parse_args(self,args):
+        super(Add,self).parse_args(args)
 
-
-    def map_args_to_submodules(self):
-        """ For each file/path to be added, determine which submodule it maps into """
-
-        map = {}
-        opts = []
-        
-        for arg in self.args:
-            if arg[0] == '-':
-                opts.append(arg)
-                continue
-
-            if arg.endswith('/'):
-                arg = arg[:-1]
-            
-            subm, sub_path = self.which_submodule(arg)
-            print "arg=%s subm=%s %s" % (arg,subm,sub_path)
-            if subm:
-                if not subm.rel_path in map:
-                    map[subm.rel_path] = {'subm': subm, 'paths': []}
-                map[subm.rel_path]['paths'].append(sub_path)
-                
+        all_args = self.args
+        self.options_list = []
+        self.args = []
+        for arg in all_args:
+            if arg.startswith('/'):
+                self.options_list.append(arg)
             else:
-                if not '' in map:
-                    map[''] = {'subm':None, 'paths': []}
-                map['']['paths'].append(arg)
-                    
-            
-        return map,opts
-    
-            
+                self.args.append(arg)
+                
+        
+    def run(self):
+        map = self.map_args_to_submodules()
+        self.add_per_submodule(map,self.options_list)
+
+
     def add_per_submodule(self,map,opts):
         """ For each mapped submodule, run 'git add' locally """
         for key in sorted(map.keys()):

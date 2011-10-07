@@ -18,6 +18,12 @@ class Repo(object):
         return self.submodules
 
 
+    def get_submodule(self,rel_path):
+        for subm in self.get_submodules():
+            if subm.rel_path == rel_path:
+                return subm
+            
+
     def parse_modules(self):
         if self.submodules:
             return
@@ -29,7 +35,7 @@ class Repo(object):
             self.groot.log("# No submodules file: %s" % (modules_path))
             return
 
-        self.groot.log("# Reading %s" % (modules_path))
+        self.groot.debug("# Reading %s" % (modules_path))
         cfg = GitConfig()
         cfg.parse(modules_path)
         
@@ -51,14 +57,14 @@ class Repo(object):
         return os.path.exists(self.path)
 
 
-    def banner(self,msg=None):
-        self.groot.log("\n# ---[ %s ]---" % (self.banner_path()))
+    def banner(self,msg=None,deferred=False):
+        self.groot.log("\n# ---[ %s ]---" % (self.banner_path()),deferred=deferred)
         if msg:
-            self.groot.log(msg)
+            self.groot.log(msg,deferred=deferred)
 
 
-    def footer(self,msg=''):
-        self.groot.log(msg)
+    def footer(self,msg='',deferred=False):
+        self.groot.log(msg,deferred=deferred)
 
 
     def banner_path(self):
@@ -72,6 +78,10 @@ class Repo(object):
         if 'new_branch' in kwargs and kwargs['new_branch']: git_command.append('-b')
         
         git_command.append(commit)
+        git_command.append('--') # End of options
+
+        if 'paths' in kwargs and kwargs['paths']: git_command.extend(kwargs['paths'])
+        
         return self.do_git(git_command)
         
 
@@ -165,7 +175,6 @@ class Submodule(Repo):
             return None
 
         path = path[len(self.rel_path):]
-        if path == '': path = '.'
         if path.endswith('/'): path = path[:-1]
         if path.startswith('/'): path = path[1:]
 

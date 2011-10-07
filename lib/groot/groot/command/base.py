@@ -53,6 +53,12 @@ class BaseCommand(object):
         return self.root_repo
 
 
+    def get_submodule(self,name):
+        """ Return a Repo instance representing the specific submodule """
+        repo = self.get_repo()
+        return repo.get_submodule(name)
+
+
     def get_submodules(self):
         """ Return an array Repo instances representing the child repositories """
         repo = self.get_repo()
@@ -67,9 +73,43 @@ class BaseCommand(object):
 
         for subm in self.get_submodules():
             rel_path = subm.relative_path(path)
-            if rel_path:
+            if rel_path is not None:
                 return (subm,rel_path)
 
-        return None
+        return (None,path)
 
 
+    def map_args_to_submodules(self):
+        """ For each file/path to be added, determine which submodule it maps into """
+
+        map = {}
+        for arg in self.args:
+            if arg.endswith('/'):
+                arg = arg[:-1]
+            
+            subm, sub_path = self.which_submodule(arg)
+            if subm:
+                if not subm.rel_path in map:
+                    map[subm.rel_path] = {'subm': subm, 'paths': []}
+                if sub_path != '':
+                    map[subm.rel_path]['paths'].append(sub_path)
+                
+            else:
+                if not '' in map:
+                    map[''] = {'subm':None, 'paths': []}
+                map['']['paths'].append(arg)
+                    
+            
+        return map
+    
+
+    def map_all_submodules(self):
+        """ For case where args is empty, create a map the includes all submodules """
+
+        map = {}
+        map[''] = { 'subm': None, 'paths': [] }
+        for subm in self.get_submodules():
+            map[subm.rel_path] = {'subm':subm, 'paths':[]}
+        return map
+
+    
