@@ -12,5 +12,5 @@ class Submodule(BaseCommand):
 
     def run(self):
         root = self.get_repo()
-        root.do_git('submodule',*self.args)
+        root.do_git(['submodule'] + self.args)
         

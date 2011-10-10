@@ -154,7 +154,7 @@ class Submodule(Repo):
             root's index, not what's currently checked-out in the submodule) """
         output = self.root.do_git(['submodule','status','--cached',self.rel_path],capture=True)
 
-        m = re.match('([ +\-])([a-z0-9]{40}) (.+) \((.+)\)',output)
+        m = re.match('([ +\-])([a-z0-9]{40}) (.+)(| \((.+)\))',output)
         if not m:
             raise GitOutputError("Didn't recognized output of 'git submodule status --cached")
 

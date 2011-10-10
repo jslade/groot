@@ -32,7 +32,47 @@ class Push(BaseCommand):
         self.options, self.args = op.parse_args(args)
 
 
+    def push_args(self):
+        args = []
+        o = self.options
+
+        if o.quiet: args += ['--quiet']
+        if o.verbose: args += ['--verbose']
+        
+        if o.all: args += ['--all']
+        if o.mirror: args += ['--mirror']
+        if o.delete: args += ['--delete']
+        if o.tags: args += ['--tags']
+
+        if o.dry_run: args += ['--dry-run']
+        if o.porcelain: args += ['--porcelain']
+        if o.progress: args += ['--progress']
+        if o.force: args += ['--force']
+
+        return args
+        
+        
+
     def run(self):
-        pass
+        self.push_submodules()
+        self.push_root()
 
 
+    def push_submodules(self):
+        for subm in self.get_submodules():
+            subm.banner()
+
+            push = ['push']
+            push += self.push_args()
+
+            subm.do_git(push)
+
+
+    def push_root(self):
+        root = self.get_repo()
+        root.banner()
+
+        push = ['push']
+        push += self.push_args()
+
+        root.do_git(push)

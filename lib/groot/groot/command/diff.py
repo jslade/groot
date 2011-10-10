@@ -17,6 +17,8 @@ class Diff(BaseCommand):
         op.add_option("--quiet","-q", action="store_true", dest="quiet")
         op.add_option("--verbose","-v", action="store_true", dest="verbose")
 
+        # TODO: Lots more diff options to support
+
         self.options, self.args = op.parse_args(args)
 
 
