@@ -18,6 +18,7 @@ class Diff(BaseCommand):
         op.add_option("--verbose","-v", action="store_true", dest="verbose")
 
         # TODO: Lots more diff options to support
+        op.add_option("--cached", action="store_true", dest="cached")
 
         self.options, self.args = op.parse_args(args)
 
@@ -26,6 +27,8 @@ class Diff(BaseCommand):
         args = []
         o = self.options
 
+        if o.cached: args += ['--cached']
+        
         return args
         
 

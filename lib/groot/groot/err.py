@@ -18,6 +18,10 @@ class GitCommandError(Exception):
         self.repo_path = repo_path
         self.command = command
 
+    def command_str(self):
+        import pipes
+        return ' '.join(pipes.quote(s) for s in self.command)
+
 
 class GitStructureError(Exception):
     """ Error indicating git files missing or have unexpected contents """

@@ -115,6 +115,12 @@ class Submodule(Repo):
         else:
             self.branch = 'master'
 
+        if 'remote' in kwargs:
+            self.remote = kwargs['remote']
+        else:
+            self.remote = 'origin'
+
+
 
     def __repr__(self):
         return '[submodule "%s"]' % (self.rel_path)
@@ -128,6 +134,12 @@ class Submodule(Repo):
         """ Returns the name of the branch that is 'preferred' for this submodule,
             as defined by the sumbodule.$path.branch config value in .gitmodules """
         return self.branch
+
+
+    def preferred_remote(self):
+        """ Returns the name of the remote that is 'preferred' for this submodule,
+            as defined by the sumbodule.$path.origin config value in .gitmodules """
+        return self.remote
 
 
     def is_detached(self):

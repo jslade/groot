@@ -7,6 +7,7 @@ import os
 import pty
 import re
 import select
+import signal
 import subprocess
 import sys
 import threading
@@ -120,7 +121,7 @@ class Git(object):
                 if m:
                     monitor.remove(master)
                     returncode = int(m.group(1))
-                    p.kill()
+                    os.kill(p.pid,signal.SIGKILL)
                 else:
                     stdout += line
 
@@ -192,7 +193,10 @@ class Git(object):
             self.parse(text)
 
         def __repr__(self):
-            return '<%s: %s>' % ('Branch' if self.branch else 'ID',self.name)
+            if self.branch:
+                return '<Branch: %s>' % (self.name)
+            else:
+                return '<ID: %s>' % (self.name)
 
 
         def __eq__(self,other):

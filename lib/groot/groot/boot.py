@@ -38,7 +38,12 @@ class Groot(object):
       try: self.find_repo()
       except RepoNotFound, ex:
         self.fatal(ex)
-    self.command.run()
+
+    try:
+      self.command.run()
+    except GitCommandError, ex:
+      self.fatal("-E- Git command failed in %s:\n%s" % (ex.repo_path,ex.command_str()))
+      
   
 
   def log(self,msg,deferred=False):
@@ -129,6 +134,6 @@ class Groot(object):
 
     
   def fatal(self,msg,exit=1):
-    print(msg)
+    self.error(msg)
     sys.exit(exit)
 
