@@ -147,6 +147,17 @@ class Commit(BaseCommand):
             self.groot.debug("# Ignoring --all option for root level")
             self.options.all = False
 
+        # Special case:
+        # If --include/--only option is given: If some of the paths mapped to submodules,
+        # then include those submodules in the paths list for the root as well.
+        if self.options.include or self.options.only:
+            for subm_name in sorted(map.keys()):
+                if not subm_name: continue # skip root
+                m = map[subm_name]
+                subm_paths = m['paths']
+                if len(subm_paths) > 0:
+                    paths.append(subm_name)
+        
         commit = ['commit']
         commit += self.commit_args()
         commit += paths

@@ -44,7 +44,10 @@ class Diff(BaseCommand):
 
     def diff_root(self,map):
         try: paths = map['']['paths']
-        except KeyError: paths=[]
+        except KeyError:
+            # If paths were given, but not for the root, then skip the root
+            if self.args: return
+            paths=[]
 
         root = self.get_repo()
         root.banner()
