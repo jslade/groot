@@ -98,6 +98,13 @@ class Git(object):
         #    call_args['stderr'] = subprocess.PIPE
         call_args['close_fds'] = True
 
+        # Don't inherit the PAGER env var for the git subprocess.
+        # That causes problems for things like multi-page output from git diff
+        env = dict(os.environ)
+        #if 'PAGER' in env: del env['PAGER']
+        env['PAGER'] = ''
+        call_args['env'] = env
+        
         # Execute the command with a helper script that ensures we can detect
         # the end of output so it doesn't try to read (and block) forever:
         wrapper = os.path.join(os.path.dirname(inspect.getfile(inspect.currentframe())),'git-wrapper.sh')
