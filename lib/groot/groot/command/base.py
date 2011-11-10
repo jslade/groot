@@ -80,7 +80,7 @@ class BaseCommand(object):
 
 
     def map_args_to_submodules(self):
-        """ For each file/path to be added, determine which submodule it maps into """
+        """ For each file/path in the argument list, determine which submodule it maps into """
 
         map = {}
         for arg in self.args:
