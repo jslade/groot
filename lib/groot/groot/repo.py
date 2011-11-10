@@ -183,12 +183,23 @@ class Submodule(Repo):
 
     def relative_path(self,path):
         """ Return the portion of the given path relative to this submodule's path """
+
+        # If the path is in this submodule, it will start with the submodule directory
         if not path.startswith(self.rel_path):
             return None
 
+        # Remove the submodule path.
+        # That should leave a string that is:
+        # - empty -- the submoule path itself
+        # - starts with '/'
+        # If the remaining path does not start with '/',
+        # the path under question is not part of this submodule.
         path = path[len(self.rel_path):]
-        if path.endswith('/'): path = path[:-1]
+        if not (path == '' or path.startswith('/')):
+            return None
+
         if path.startswith('/'): path = path[1:]
+        if path.endswith('/'): path = path[:-1]
 
         return path
 
