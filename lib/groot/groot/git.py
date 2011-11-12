@@ -27,6 +27,10 @@ class Git(object):
 
     def find_git_dir(self,path):
         """ Find the .git dir for the given git repo path """
+        if not path:
+            self.path = self.git_dir = None
+            return
+        
         git_dir = "%s/.git" % (path)
         if os.path.exists(git_dir):
             self.path = path
@@ -39,7 +43,8 @@ class Git(object):
         self.groot.debug("# In %s: %s" % (self.path,' '.join(git_command)))
 
         # Run the command in the root directory of the git repo
-        cd = safe_chdir(self.path)
+        if self.path:
+            cd = safe_chdir(self.path)
 
         # Set up the command line and args for creating the subprocess
         call_args = {}
