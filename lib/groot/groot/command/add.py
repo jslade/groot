@@ -18,7 +18,7 @@ class Add(BaseCommand):
         self.options_list = []
         self.args = []
         for arg in all_args:
-            if arg.startswith('/'):
+            if arg.startswith('-'):
                 self.options_list.append(arg)
             else:
                 self.args.append(arg)

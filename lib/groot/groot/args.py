@@ -34,6 +34,7 @@ class ParseArgs(object):
             op.add_option("--debug",
                           action="callback", callback=self.set_debug,
                           help="include extra debugging output")
+            op.add_option("--in", type="string", dest="in_")
 
             options, args = op.parse_args(args)
 
@@ -65,6 +66,10 @@ class ParseArgs(object):
         """ Instantiate the command handler by this command name,
             and check the command-specific arguments """
         try:
+            if self.options.in_:
+                cmd_args[0:0] = [self.options.in_,cmd_name]
+                cmd_name = 'in'
+
             cmd_class = BaseCommand.find_command(cmd_name)
             if not cmd_class:
                 raise InvalidUsage("Unknown command: %s" % cmd_name)

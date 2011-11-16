@@ -85,13 +85,19 @@ class Repo(object):
         return self.do_git(git_command)
         
 
+    def is_clean(self):
+        return self.git.is_clean()
+
+
     def is_detached(self):
         return self.git.is_detached()
 
 
     def current_branch(self):
         return self.git.current_branch()
-    
+
+    def get_head_commit(self):
+        return self.git.get_head_of_branch(self.git.current_branch())
 
 
 class Submodule(Repo):

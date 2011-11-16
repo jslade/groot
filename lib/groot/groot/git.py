@@ -154,7 +154,7 @@ class Git(object):
             terminal """
         return sys.stdout.isatty()
 
-        
+
     def is_detached(self):
         head = self.get_head()
         if not head.is_ref():
@@ -166,8 +166,8 @@ class Git(object):
             return head.name
         else:
             return None
-        
-        
+
+
     def get_head(self):
         head_path = os.path.join(self.git_dir,'HEAD')
         if not os.path.exists(head_path):

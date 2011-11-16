@@ -79,7 +79,7 @@ class BaseCommand(object):
         return (None,path)
 
 
-    def map_args_to_submodules(self):
+    def map_args_to_submodules(self,**kwargs):
         """ For each file/path in the argument list, determine which submodule it maps into """
 
         map = {}
@@ -98,7 +98,12 @@ class BaseCommand(object):
                 if not '' in map:
                     map[''] = {'subm':None, 'paths': []}
                 map['']['paths'].append(arg)
-                    
+
+
+        # Add empty mapping for the root if no other mappings were made
+        if len(map) == 0:
+            if 'default_root' in kwargs and kwargs['default_root']:
+                map[''] = {'subm':None, 'paths':[]}
             
         return map
     
