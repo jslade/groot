@@ -88,6 +88,9 @@ class Repo(object):
     def is_clean(self):
         return self.git.is_clean()
 
+    def is_index_clean(self):
+        return self.git.is_index_clean()
+    
 
     def is_detached(self):
         return self.git.is_detached()

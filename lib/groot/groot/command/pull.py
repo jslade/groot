@@ -1,5 +1,6 @@
 
 from optparse import OptionParser
+from tempfile import NamedTemporaryFile
 
 from base import *
 
@@ -86,18 +87,17 @@ class Pull(BaseCommand):
             subm.banner()
             
             at_head_before = subm.is_at_head()
-            self.groot.log("# At head of '%s' before commit? %s" %
+            self.groot.log("# At head of '%s' before pull? %s" %
                            (subm.preferred_branch(),at_head_before))
             commit_before = subm.get_current_commit()
 
             self.pull_submodule(subm)
 
             at_head_after = subm.is_at_head()
-            self.groot.log("# At head of '%s' after commit? %s" %
+            self.groot.log("# At head of '%s' after pull? %s" %
                            (subm.preferred_branch(),at_head_before))
             
             if at_head_before and not at_head_after:
-                self.add_submodule(subm)
                 self.added_submodules.append((subm,commit_before))
                 
 
@@ -138,16 +138,24 @@ class Pull(BaseCommand):
             Attempts to duplicate the commit messages from the submodules as well,
             so the commits in the root get meaningful commits.
         """
+        root = self.get_repo()
         if not self.added_submodules:
             return
 
-        msg = ["groot pull:"]
+        msg = ["groot pull:\n"]
         for s in self.added_submodules:
             subm, commit_before = s
             msg.append(self.message_for_commit(subm,commit_before))
+            self.add_submodule(subm)
 
-        commit = ['commit','-m',"\n".join(msg)]
-        root = self.get_repo()
+        if root.is_index_clean():
+            return
+
+        msg_tmp = NamedTemporaryFile(prefix="groot-")
+        msg_tmp.write(''.join(msg))
+        msg_tmp.close()
+            
+        commit = ['commit','-F',msg_tmp.name]
         stdout = root.do_git(commit,capture=True,tty=True)
 
         self.groot.log(stdout,deferred=True)
@@ -156,6 +164,11 @@ class Pull(BaseCommand):
     def message_for_commit(self, subm, commit_before):
         log = ['log','--pretty=oneline', '%s..' % (commit_before)]
         stdout = subm.do_git(log,capture=True)
-        return stdout
+
+        lines = []
+        for line in stdout.split("\n"):
+            if line == '': lines.append('')
+            else: lines.append("%s: %s" % (subm.rel_path, line))
+        return "\n".join(lines)
             
 

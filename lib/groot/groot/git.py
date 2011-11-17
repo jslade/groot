@@ -155,6 +155,17 @@ class Git(object):
         return sys.stdout.isatty()
 
 
+    def is_clean(self):
+        """ Returns true if both the index and working tree are clean """
+        return self.is_index_clean() and self.is_working_tree_clean()
+
+
+    def is_index_clean(self):
+        self.do_command(['git','diff-index','--cached','--quiet','HEAD'],
+                        expected_returncode=[0,1])
+        return self.last_result[2] == 0
+        
+        
     def is_detached(self):
         head = self.get_head()
         if not head.is_ref():
