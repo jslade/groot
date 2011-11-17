@@ -19,6 +19,8 @@ class Repo(object):
 
 
     def get_submodule(self,rel_path):
+        if rel_path.endswith('/'):
+            rel_path = rel_path[:-1]
         for subm in self.get_submodules():
             if subm.rel_path == rel_path:
                 return subm

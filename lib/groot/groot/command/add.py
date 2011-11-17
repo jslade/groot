@@ -25,7 +25,7 @@ class Add(BaseCommand):
                 
         
     def run(self):
-        map = self.map_args_to_submodules()
+        map = self.map_args_to_submodules(subm_path_goes_to_root=True)
         self.add_per_submodule(map,self.options_list)
 
 

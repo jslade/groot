@@ -1,4 +1,5 @@
 
+import os
 from optparse import OptionParser
 from tempfile import NamedTemporaryFile
 
@@ -151,7 +152,7 @@ class Pull(BaseCommand):
         if root.is_index_clean():
             return
 
-        msg_tmp = NamedTemporaryFile(prefix="groot-")
+        msg_tmp = NamedTemporaryFile(prefix="groot-",delete=False)
         msg_tmp.write(''.join(msg))
         msg_tmp.close()
             
@@ -160,6 +161,8 @@ class Pull(BaseCommand):
 
         self.groot.log(stdout,deferred=True)
 
+        os.unlink(msg_tmp.name)
+        
 
     def message_for_commit(self, subm, commit_before):
         log = ['log','--pretty=oneline', '%s..' % (commit_before)]

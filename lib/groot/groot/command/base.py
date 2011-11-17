@@ -82,12 +82,24 @@ class BaseCommand(object):
     def map_args_to_submodules(self,**kwargs):
         """ For each file/path in the argument list, determine which submodule it maps into """
 
+        subm_path_goes_to_root = False
+        if 'subm_path_goes_to_root' in kwargs: subm_path_goes_to_root=kwargs['subm_path_goes_to_root']
+        
         map = {}
         for arg in self.args:
             if arg.endswith('/'):
                 arg = arg[:-1]
             
             subm, sub_path = self.which_submodule(arg)
+
+            if not sub_path:
+                # For the case of an arg the corresponds exactly to a subm path,
+                # determine whether it should be considered a path for the root,
+                # or an empty path in the submodule
+                if subm_path_goes_to_root:
+                    sub_path = subm.rel_path
+                    subm = None
+                    
             if subm:
                 if not subm.rel_path in map:
                     map[subm.rel_path] = {'subm': subm, 'paths': []}
