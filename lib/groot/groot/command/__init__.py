@@ -11,7 +11,6 @@ from init import *
 from log import *
 from pull import *
 from push import *
-from start import *
 from stash import *
 from status import *
 from submodule import *
