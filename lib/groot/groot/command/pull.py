@@ -62,20 +62,31 @@ class Pull(BaseCommand):
             if not o.all:
                 args += [subm.preferred_remote()]
                 branch = subm.current_branch()
+                if not branch: branch = subm.preferred_branch()
                 if branch:
                     args += [branch]
-                    
+        else:
+            args += self.args
 
         return args
         
 
     def run(self):
         """ Run pull in each submodule, then at the root """
+        self.require_clean()
         self.pull_submodules()
         self.pull_root()
         if self.options.commit: self.commit_submodules()
         
 
+
+    def require_clean(self):
+        """ Require that the repos are all 'clean' before pulling """
+        root = self.get_repo()
+        if not root.is_clean():
+            self.groot.fatal("-E- There are uncommitted changes. Repo must be clean before pulling")
+            
+            
     def pull_submodules(self):
         """ Run pull in each submodule
         

@@ -164,6 +164,12 @@ class Git(object):
         self.do_command(['git','diff-index','--cached','--quiet','HEAD'],
                         expected_returncode=[0,1])
         return self.last_result[2] == 0
+
+
+    def is_working_tree_clean(self):
+        self.do_command(['git','diff-files','--quiet'],
+                        expected_returncode=[0,1])
+        return self.last_result[2] == 0
         
         
     def is_detached(self):
@@ -174,7 +180,7 @@ class Git(object):
     def current_branch(self):
         head = self.get_head()
         if head.branch:
-            return head.name
+            return self.simple_branch(head.name)
         else:
             return None
 
@@ -193,7 +199,7 @@ class Git(object):
         branch_head_path = os.path.join(self.git_dir,self.canonical_branch(branch))
         if not os.path.exists(branch_head_path):
             raise GitBranchNotFound(branch)
-
+        
         fp = open(branch_head_path,'r')
         line = fp.readline()
         return Git.ID(self,line)
@@ -203,6 +209,16 @@ class Git(object):
         if re.match('refs/heads/',branch): return branch
         return 'refs/heads/%s' % (branch)
 
+
+    def simple_branch(self,branch):
+        m = re.match('refs/heads/(.+)',branch)
+        if m: return m.group(1)
+        return branch
+
+
+    def branch_exists(self,branch):
+        branch_head_path = os.path.join(self.git_dir,self.canonical_branch(branch))
+        return os.path.exists(branch_head_path)
 
 
 

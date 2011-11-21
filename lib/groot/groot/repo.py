@@ -79,7 +79,7 @@ class Repo(object):
         if 'force' in kwargs and kwargs['force']: git_command.append('--force')
         if 'new_branch' in kwargs and kwargs['new_branch']: git_command.append('-b')
         
-        git_command.append(commit)
+        git_command.append(self.git.simple_branch(commit))
         git_command.append('--') # End of options
 
         if 'paths' in kwargs and kwargs['paths']: git_command.extend(kwargs['paths'])
@@ -93,6 +93,9 @@ class Repo(object):
     def is_index_clean(self):
         return self.git.is_index_clean()
     
+    def is_working_tree_clean(self):
+        return self.git.is_working_tree_clean()
+    
 
     def is_detached(self):
         return self.git.is_detached()
@@ -104,6 +107,9 @@ class Repo(object):
     def get_head_commit(self):
         return self.git.get_head_of_branch(self.git.current_branch())
 
+    def branch_exists(self,branch):
+        return self.git.branch_exists(branch)
+    
 
 class Submodule(Repo):
     """ Subclass of Repo representing a submodule """
@@ -124,7 +130,7 @@ class Submodule(Repo):
         if 'branch' in kwargs:
             self.branch = kwargs['branch']
         else:
-            self.branch = 'master'
+            self.branch = None
 
         if 'remote' in kwargs:
             self.remote = kwargs['remote']
@@ -143,8 +149,16 @@ class Submodule(Repo):
 
     def preferred_branch(self):
         """ Returns the name of the branch that is 'preferred' for this submodule,
-            as defined by the sumbodule.$path.branch config value in .gitmodules """
-        return self.branch
+            as defined by the sumbodule.$path.branch config value in .gitmodules.
+            If no preferred branch is given, default is the current branch of the root repo """
+        if self.branch:
+            return self.branch
+
+        root_branch = self.root.current_branch()
+        if root_branch:
+            return root_branch
+
+        
 
 
     def preferred_remote(self):

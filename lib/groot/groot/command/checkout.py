@@ -107,31 +107,51 @@ class Checkout(BaseCommand):
         
         
     def checkout_matching(self,subm,commit=None):
-        
-        if subm.is_detached():
-            self.groot.log("# Submodule %s is detached, looking for alternative checkout" % (subm.rel_path))
 
-            try:
+        preferred_branch = subm.preferred_branch()
+        self.groot.debug("# Submodule %s preferred branch: %s" % (subm.rel_path,preferred_branch))
+
+        kwargs = { 'new_branch': self.options.new_branch,
+                   'track': self.options.track,
+                   'force': self.options.force }
+
+        if not subm.branch_exists(preferred_branch):
+            # This is for the case of checking out an existing branch in the root, but
+            # the corresponding branch doesn't exist in the submodule (e.g. the submodule
+            # was just added to the root).
+            kwargs['new_branch'] = preferred_branch
+            
+        
+        try:
+            if subm.is_detached():
+                self.groot.log("# Submodule %s is detached, looking for alternative checkout" % (subm.rel_path))
+
                 if subm.is_at_head():
                     self.groot.log("# Submodule commit is at the head of branch '%s' --> checking out branch" %
-                                   (subm.preferred_branch()))
-                    subm.checkout(subm.preferred_branch())
+                                   (preferred_branch))
+                    subm.checkout(preferred_branch,**kwargs)
+                elif self.options.force:
+                    self.groot.log("# Submodule commit is not the head of branch '%s' --> forcing checkout of branch" %
+                                   (preferred_branch))
+                    subm.checkout(preferred_branch,**kwargs)
                 else:
                     self.groot.log("# Submodule commit is not the head of branch '%s' --> Leaving detached" %
-                                   (subm.preferred_branch()))
+                                   (preferred_branch))
                     
-            except GitBranchNotFound, ex:
-                self.groot.error("-E- Specified branch doesn't exist: %s" % (ex))
-                return
-                
-        else:
-            self.groot.log("# Submodule %s on branch: %s" % (subm.rel_path,subm.current_branch()))
+            else:
+                if preferred_branch and subm.current_branch() != preferred_branch:
+                    self.groot.log("# Switching submodule %s to branch: %s" %
+                                   (subm.rel_path,preferred_branch))
+                    subm.checkout(preferred_branch,**kwargs)
+
+                else:
+                    self.groot.log("# Submodule %s on branch: %s" % (subm.rel_path,subm.current_branch()))
 
 
-        if subm.is_detached():
-            self.groot.warning("-W- Submodule in detached-head state after checkout: %s" % (subm.rel_path))
-
+            if subm.is_detached():
+                self.groot.warning("-W- Submodule in detached-head state after checkout: %s" % (subm.rel_path))
 
     
-
-        
+        except GitBranchNotFound, ex:
+            self.groot.error("-E- Specified branch doesn't exist: %s" % (ex))
+            return
