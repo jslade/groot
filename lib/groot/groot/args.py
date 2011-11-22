@@ -73,7 +73,7 @@ class ParseArgs(object):
             cmd_class = BaseCommand.find_command(cmd_name)
             if not cmd_class:
                 raise InvalidUsage("Unknown command: %s" % cmd_name)
-            self.command = cmd_class(self.groot)
+            self.command = cmd_class(self.groot,cmd_name)
             self.command.parse_args(cmd_args)
 
         except InvalidUsage, ex:

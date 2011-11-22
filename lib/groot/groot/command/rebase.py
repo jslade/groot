@@ -1,5 +1,5 @@
 
 from base import *
 
-class Submodule(AliasedCommand):
+class Rebase(AliasedCommand):
     pass

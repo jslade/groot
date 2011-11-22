@@ -19,9 +19,15 @@ class BaseCommand(object):
                 if alias == cmd_name:
                     return sub
 
+            found = sub.find_command(cmd_name)
+            if found: return found
 
-    def __init__(self,groot):
+        return None
+
+
+    def __init__(self,groot,cmd_name):
         self.groot = groot
+        self.cmd_name = cmd_name
         self.root_repo = None
         self.init()
         
@@ -130,3 +136,17 @@ class BaseCommand(object):
         return map
 
     
+
+
+class AliasedCommand(BaseCommand):
+    """ Generic command that just aliases a native git command
+        directly -- just passes all arguments through
+    """
+
+    def requires_repo(self):
+        return True
+        
+    def run(self):
+        root = self.get_repo()
+        root.do_git([self.cmd_name] + self.args)
+        

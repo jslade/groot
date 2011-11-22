@@ -12,6 +12,7 @@ from init import *
 from log import *
 from pull import *
 from push import *
+from rebase import *
 from reset import *
 from stash import *
 from status import *
