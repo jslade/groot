@@ -201,7 +201,7 @@ class Submodule(Repo):
     
     def update(self):
         """ Update the submodule so it has the current commit checked out """
-        self.root.do_git(['submodule','update',self.rel_path])
+        self.root.do_git(['submodule','update','--init',self.rel_path])
         return True
 
     
