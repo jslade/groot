@@ -52,11 +52,7 @@ class Add(BaseCommand):
 
     def add_in_submodule(self,subm,paths,opts):
         subm.banner()
-        self.groot.log("# add: %s" % (' '.join(paths)))
-        
+        self.groot.debug("# add: %s" % (' '.join(paths)))
 
         add = ['add'] + opts + paths
         subm.do_git(add)
-
-        
-        

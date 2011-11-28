@@ -1,10 +1,31 @@
 
 from optparse import OptionParser
+from tempfile import NamedTemporaryFile
 import re
 
 from base import *
 
-class Commit(BaseCommand):
+
+class CommitMessages(object):
+    def message_for_commit(self, subm, from_commit,to_commit=None):
+        if from_commit and to_commit:
+            version='%s..%s' % (from_commit,to_commit)
+        else:
+            version='%s^..%s' % (from_commit,from_commit)
+            
+        log = ['log','--pretty=oneline', version]
+        stdout = subm.do_git(log,capture=True)
+
+        lines = []
+        for line in stdout.split("\n"):
+            if line == '': lines.append('')
+            else: lines.append("%s: %s" % (subm.rel_path, line))
+        return "\n".join(lines)
+            
+    
+
+
+class Commit(BaseCommand,CommitMessages):
     """ Commit modules already added to the index per submodule.
 
         Also, if before the commit, the submodule commit is at the
@@ -37,8 +58,8 @@ class Commit(BaseCommand):
         op.add_option("--include","-i", action="store_true", dest="include")
 
         self.options, self.args = op.parse_args(args)
-
-
+        self.added_submodules = []
+        
     def commit_args(self):
         args = []
         o = self.options
@@ -47,7 +68,7 @@ class Commit(BaseCommand):
         if o.verbose: args += ['--verbose']
         
         if o.message: args += ['--message',o.message]
-        if o.message_file: commmit += ['--file',o.message_file]
+        if o.message_file: args += ['--file',o.message_file]
         if o.author: args += ['--author',o.author]
         if o.date: args += ['--date',o.date]
         if o.reedit: args += ['--reedit-message',o.reedit]
@@ -90,32 +111,47 @@ class Commit(BaseCommand):
                 continue
 
             at_head_before = subm.is_at_head()
-            self.groot.log("# At head of '%s' before commit? %s" %
-                           (subm.preferred_branch(),at_head_before),deferred=True)
-
+            self.groot.debug("# At head of '%s' before commit? %s" %
+                             (subm.preferred_branch(),at_head_before),deferred=True)
+            commit_before = subm.get_current_commit()
+            
             self.commit_submodule(subm,map[subm.rel_path]['paths'])
 
             at_head_after = subm.is_at_head()
             self.groot.log("# At head of '%s' after commit? %s" %
                            (subm.preferred_branch(),at_head_before),deferred=True)
             
-            if at_head_before: #and not at_head_after:
-                self.add_submodule(subm)
+            if at_head_before and not at_head_after:
+                self.add_submodule(subm,commit_before)
 
 
     def commit_submodule(self,subm,paths):
         commit = ['commit']
         commit += self.commit_args()
         commit += paths
+
+        echo=True
+        capture=False
+        if self.options.message or \
+           self.options.message_file or \
+           self.options.reedit or \
+           self.options.reuse:
+            echo=False
+            capture=True
         
-        stdout = subm.do_git(commit,capture=True,tty=True,expected_returncode=[0,1])
+        kwargs = { 'capture': capture,
+                   'echo': echo,
+                   'tty': capture,
+                   'expected_returncode': [0,1] }
+        stdout = subm.do_git(commit,**kwargs)
 
         if stdout and \
                (self.options.verbose or \
                 not self.submodule_is_clean(stdout)):
             self.groot.log(stdout,deferred=True)
         else:
-            self.groot.log("# Nothing to commit",deferred=True)
+            if not echo:
+                self.groot.log("# Nothing to commit",deferred=True)
             
         
     def submodule_is_clean(self,stdout):
@@ -123,11 +159,12 @@ class Commit(BaseCommand):
         if m: return True
 
 
-    def add_submodule(self,subm):
+    def add_submodule(self,subm,commit_before):
         add = ['add',subm.rel_path]
         root = self.get_repo()
         stdout = root.do_git(add,capture=True,tty=True)
-
+        self.added_submodules.append((subm,commit_before))
+        
         self.groot.log(stdout,deferred=True)
 
             
@@ -157,6 +194,17 @@ class Commit(BaseCommand):
                 subm_paths = m['paths']
                 if len(subm_paths) > 0:
                     paths.append(subm_name)
+
+        # Special case:
+        # If no commit message is given on the command line, use the commit message(s) from the
+        # committed submodules
+        has_message = False
+        if self.options.message: has_message=True
+        if self.options.message_file: has_message=True
+        if self.options.reuse: has_message=True
+        if self.options.reedit: has_message=True
+        if not has_message:
+            self.generate_commit_message_for_root()
         
         commit = ['commit']
         commit += self.commit_args()
@@ -164,3 +212,19 @@ class Commit(BaseCommand):
 
         root.do_git(commit,expected_returncode=[0,1])
 
+
+    def generate_commit_message_for_root(self):
+        msg = []
+        for s in self.added_submodules:
+            subm, commit_before = s
+            msg.append(self.message_for_commit(subm,from_commit=commit_before,to_commit='HEAD'))
+
+        if len(msg):
+            msg_tmp = NamedTemporaryFile(prefix="groot-",delete=False)
+            msg_tmp.write(''.join(msg))
+            msg_tmp.close()
+
+            self.options.message_file = msg_tmp.name
+            self.cleanup_files.append(msg_tmp.name)
+        
+                       

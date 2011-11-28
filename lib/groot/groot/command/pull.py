@@ -4,8 +4,9 @@ from optparse import OptionParser
 from tempfile import NamedTemporaryFile
 
 from base import *
+from commit import *
 
-class Pull(BaseCommand):
+class Pull(BaseCommand,CommitMessages):
     """ Pull in changes from the remotes for all repositories (recursively)
 
     """
@@ -99,15 +100,15 @@ class Pull(BaseCommand):
             subm.banner()
             
             at_head_before = subm.is_at_head()
-            self.groot.log("# At head of '%s' before pull? %s" %
-                           (subm.preferred_branch(),at_head_before))
+            self.groot.debug("# At head of '%s' before pull? %s" %
+                             (subm.preferred_branch(),at_head_before))
             commit_before = subm.get_current_commit()
 
             self.pull_submodule(subm)
 
             at_head_after = subm.is_at_head()
-            self.groot.log("# At head of '%s' after pull? %s" %
-                           (subm.preferred_branch(),at_head_before))
+            self.groot.debug("# At head of '%s' after pull? %s" %
+                             (subm.preferred_branch(),at_head_before))
             
             if at_head_before and not at_head_after:
                 self.added_submodules.append((subm,commit_before))
@@ -157,7 +158,7 @@ class Pull(BaseCommand):
         msg = ["groot pull:\n"]
         for s in self.added_submodules:
             subm, commit_before = s
-            msg.append(self.message_for_commit(subm,commit_before))
+            msg.append(self.message_for_commit(subm,from_commit=commit_before,to_commit='HEAD'))
             self.add_submodule(subm)
 
         if root.is_index_clean():
@@ -172,17 +173,5 @@ class Pull(BaseCommand):
 
         self.groot.log(stdout,deferred=True)
 
-        os.unlink(msg_tmp.name)
-        
-
-    def message_for_commit(self, subm, commit_before):
-        log = ['log','--pretty=oneline', '%s..' % (commit_before)]
-        stdout = subm.do_git(log,capture=True)
-
-        lines = []
-        for line in stdout.split("\n"):
-            if line == '': lines.append('')
-            else: lines.append("%s: %s" % (subm.rel_path, line))
-        return "\n".join(lines)
-            
+        self.cleanup_files.append(msg_tmp.name)
 

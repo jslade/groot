@@ -41,6 +41,7 @@ class Groot(object):
 
     try:
       self.command.run()
+      self.command.cleanup()
     except GitCommandError, ex:
       self.fatal("-E- Git command failed in %s:\n%s" % (ex.repo_path,ex.command_str()))
       

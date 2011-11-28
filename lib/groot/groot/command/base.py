@@ -1,4 +1,6 @@
 
+import os
+
 from groot.repo import Repo
 
 
@@ -27,8 +29,10 @@ class BaseCommand(object):
 
     def __init__(self,groot,cmd_name):
         self.groot = groot
+        self.groot.debug("# init command: %s (%s)" % (cmd_name,self.__class__))
         self.cmd_name = cmd_name
         self.root_repo = None
+        self.cleanup_files = []
         self.init()
         
 
@@ -49,6 +53,12 @@ class BaseCommand(object):
     def run(self):
         """ Perform the actual command """
         raise NotImplementedError("%s.run() is missing" % (self.__class__.__name__))
+
+            
+    def cleanup(self):
+        self.groot.debug("# cleanup command: %s" % (cmd_name))
+        for path in self.cleanup_files:
+            os.unlink(path)
 
             
     def get_repo(self):

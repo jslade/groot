@@ -94,7 +94,11 @@ class Git(object):
         if not self.isa_tty():
             return self.do_command_with_pipes(git_command,**call_args)
 
+        self.groot.debug("# With TTY: %s" % (' '.join(git_command)))
 
+        echo = False
+        if 'echo' in call_args: echo=call_args['echo']
+        
         master, slave = pty.openpty()
         call_args['stdout'] = slave
         master_fh = os.fdopen(master)
@@ -136,6 +140,7 @@ class Git(object):
                     os.kill(p.pid,signal.SIGKILL)
                 else:
                     stdout += line
+                    if echo: print(line)
 
         p.wait()
         return (stdout, stderr, returncode)
@@ -144,6 +149,8 @@ class Git(object):
     def do_command_with_pipes(self,git_command,**call_args):
         """ Run the command as a subprocess using normal pipes. The command
             will therefore not consider itself to be running on a tty/interative mode """
+        self.groot.debug("# With pipes: %s" % (' '.join(git_command)))
+        
         p = subprocess.Popen(git_command,**call_args)
         stdout, stderr = p.communicate()
         return (stdout, stderr, p.returncode)
