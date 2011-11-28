@@ -147,6 +147,9 @@ class AliasedCommand(BaseCommand):
         return True
         
     def run(self):
-        root = self.get_repo()
-        root.do_git([self.cmd_name] + self.args)
+        if self.requires_repo():
+            repo = self.get_repo()
+        else:
+            repo = Repo(self.groot,None)
+        repo.do_git([self.cmd_name] + self.args)
         
