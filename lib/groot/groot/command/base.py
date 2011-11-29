@@ -56,7 +56,7 @@ class BaseCommand(object):
 
             
     def cleanup(self):
-        self.groot.debug("# cleanup command: %s" % (cmd_name))
+        self.groot.debug("# cleanup command: %s" % (self.cmd_name))
         for path in self.cleanup_files:
             os.unlink(path)
 
