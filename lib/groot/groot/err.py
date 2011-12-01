@@ -14,7 +14,7 @@ class InvalidUsage(Exception):
 class GitCommandError(Exception):
     """ Error indicating an error when executing a git command """
     def __init__(self,repo_path,command,msg=''):
-        super(GitCommandError,self).__init__(msg)
+        Exception.__init__(self,msg)
         self.repo_path = repo_path
         self.command = command
 
