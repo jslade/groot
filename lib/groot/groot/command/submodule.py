@@ -1,6 +1,6 @@
 
 from base import *
-from ..err import *
+from groot.err import *
 
 import os
 
