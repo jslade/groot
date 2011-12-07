@@ -2,6 +2,7 @@
 from add import *
 from branch import *
 from checkout import *
+from cherry_pick import *
 from clone import *
 from commit import *
 from diff import *
@@ -10,6 +11,7 @@ from in_submodule import *
 from info import *
 from init import *
 from log import *
+from merge import *
 from pull import *
 from push import *
 from rebase import *
