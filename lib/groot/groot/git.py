@@ -23,7 +23,8 @@ class Git(object):
     def  __init__(self,path):
         self.groot = Groot.instance
         self.find_git_dir(path)
-
+        self.refs = None
+        
 
     def find_git_dir(self,path):
         """ Find the .git dir for the given git repo path """
@@ -31,12 +32,16 @@ class Git(object):
             self.path = self.git_dir = None
             return
         
-        git_dir = "%s/.git" % (path)
+        git_dir = os.path.join(path,'.git')
         if os.path.exists(git_dir):
             self.path = path
             self.git_dir = git_dir
-        else:
+        elif os.path.exists(os.path.join(path,'HEAD')):
+            # Looks to be a bare repo:
             self.path = self.git_dir = path
+        else:
+            self.path = path
+            self.git_dir = git_dir
 
 
     def do_command(self,git_command,**kwargs):
@@ -223,24 +228,82 @@ class Git(object):
         return branch
 
 
+    def remote_branch(self,branch,remote='origin'):
+        if re.match('refs/remotes/[^/]+/',branch): return branch
+        return 'refs/heads/%s/%s' % (remote,branch)
+
+
     def branch_exists(self,branch):
-        branch_head_path = os.path.join(self.git_dir,self.canonical_branch(branch))
-        return os.path.exists(branch_head_path)
+        canonical = self.canonical_branch(branch)
+        branch_head_path = os.path.join(self.git_dir,canonical)
+        if os.path.exists(branch_head_path):
+            return True # Fast check
+        refs = self.read_refs()
+        if canonical in refs:
+            return True
+        
+        
+    def remote_branch_exists(self,branch,remote=None):
+        remote_branch = self.find_remote_branch(branch,remote)
+        return remote_branch != None
 
 
+    def find_remote_branch(self,branch,remote=None):
+        if remote:
+            remote_path = self.remote_branch(branch,remote)
+            branch_head_path = os.path.join(self.git_dir,remote_path)
+            if os.path.exists(branch_head_path):
+                return self.ID(remote_path)
+            refs = self.read_refs()
+            if remote_path in refs.keys():
+                return self.ID(remote_path)
+        else:
+            ref_re = re.compile(r'refs/remotes/([^/]+)/%s' % (branch))
+            refs = self.read_refs()
+            for ref in refs.keys():
+                if ref_re.match(ref):
+                    return self.ID(self,ref)
+            
+
+    def read_refs(self):
+        if self.refs:
+            return self.refs
+
+        self.refs = {}
+        stdout = self.do_command(['git','show-ref'],capture=True)
+        for line in stdout.split("\n"):
+            try:
+                sha1, ref = line.strip().split(' ')
+                self.refs[ref] = sha1
+            except ValueError: pass
+
+        return self.refs
+        
 
     class ID(object):
-        ref_re = re.compile(r'^ref: (refs/heads/(\S+))')
+        sha1_re = re.compile(r'([a-z0-9]{40})')
+        branch_re = re.compile(r'(refs/heads/(\S+))')
+        remote_branch_re = re.compile(r'(refs/remotes/([^/]+)/(\S+))')
+        tag_re = re.compile(r'(refs/tags/(\S+))')
 
         def __init__(self,git,text):
             self.git = git
             self.name = None
+            self.ref = None
             self.branch = False
+            self.remote = None
+            self.tag = False
+            self.sha1 = None
             self.parse(text)
 
         def __repr__(self):
             if self.branch:
-                return '<Branch: %s>' % (self.name)
+                if self.remote:
+                    return '<Remote Branch: %s/%s>' % (self.remote,self.name)
+                else:
+                    return '<Branch: %s>' % (self.name)
+            elif self.tag:
+                return '<Tag: %s>' % (self.name)
             else:
                 return '<ID: %s>' % (self.name)
 
@@ -252,21 +315,45 @@ class Git(object):
             if self.git != other.git: return False
             if self.name != other.name: return False
             if self.branch != other.branch: return False
+            if self.remote != other.remote: return False
+            if self.tag != other.tag: return False
             return True
         
             
         def parse(self,raw):
-            m = self.ref_re.match(raw)
+            self.raw = raw.strip()
+            self.name = self.raw
+            
+            m = self.sha1_re.search(self.raw)
             if m:
-                self.name = m.group(1)
+                self.sha1 = m.group(1)
+                
+            m = self.branch_re.search(self.raw)
+            if m:
+                self.ref = m.group(1)
+                self.name = m.group(2)
                 self.branch = True
                 return
 
-            self.name = raw.strip()
+            m = self.remote_branch_re.search(self.raw)
+            if m:
+                self.ref = m.group(1)
+                self.name = m.group(3)
+                self.branch = True
+                self.remote = m.group(2)
+                return
+
+            m = self.tag_re.search(self.raw)
+            if m:
+                self.ref = m.group(1)
+                self.name = m.group(2)
+                self.tag = True
+                return
+
             
 
         def is_ref(self):
-            return self.branch
+            return self.ref is not None
         
             
         

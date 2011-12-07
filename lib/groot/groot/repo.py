@@ -80,9 +80,10 @@ class Repo(object):
         if 'new_branch' in kwargs and kwargs['new_branch']: git_command.append('-b')
         
         git_command.append(self.git.simple_branch(commit))
-        git_command.append('--') # End of options
 
-        if 'paths' in kwargs and kwargs['paths']: git_command.extend(kwargs['paths'])
+        if 'paths' in kwargs and kwargs['paths']:
+            git_command.append('--')
+            git_command.extend(kwargs['paths'])
         
         return self.do_git(git_command)
         
@@ -147,6 +148,10 @@ class Submodule(Repo):
         return self.rel_path
     
 
+    def branch_exists(self,branch):
+        return self.git.branch_exists(branch)
+    
+        
     def preferred_branch(self):
         """ Returns the name of the branch that is 'preferred' for this submodule,
             as defined by the sumbodule.$path.branch config value in .gitmodules.
@@ -157,8 +162,6 @@ class Submodule(Repo):
         root_branch = self.root.current_branch()
         if root_branch:
             return root_branch
-
-        
 
 
     def preferred_remote(self):
@@ -174,6 +177,7 @@ class Submodule(Repo):
     def is_at_head(self):
         """ Returns true if the current commit for this submodule is equivalent
             to the head of the submodule's preferred branch """
+        self.make_local_branch_if_remote_exists(self.preferred_branch())
         return self.is_at_head_of_branch(self.preferred_branch())
 
 
@@ -229,4 +233,19 @@ class Submodule(Repo):
         return path
 
 
+            
+    def make_local_branch_if_remote_exists(self,branch):
+        """ If there is a remote branch with the given name, then create the local branch
+            that tracks it """
+
+        if self.branch_exists(branch):
+            return
+        
+        self.groot.debug("# Looking for remote branch: %s" % (branch))
+        remote_branch = self.git.find_remote_branch(branch)
+        if remote_branch:
+            self.groot.debug("# Found remote branch: %s" % (remote_branch))
+            self.groot.log("# Creating local branch %s for %s" % (remote_branch.name,remote_branch.ref))
+            git_command = ['branch','--track',remote_branch.name, remote_branch.ref]
+            self.do_git(git_command)
             

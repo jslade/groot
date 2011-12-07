@@ -37,12 +37,9 @@ class Checkout(BaseCommand):
                 self.commit = args.pop(0)
                 self.options.new_branch = False
 
-        if not self.commit:
-            raise InvalidUsage("Missing branch/commit name")
-
         # Any remaining args are specific submodules to checkout
         # TODO: perhaps they should be treated as pathspecs, and need to be mapped
-        # to specific submodules
+        # to specific submodules (e.g. to reset a modified file)
         self.target_submodules = args
 
         self.groot.debug("commit options=%s" % (self.options))
@@ -59,6 +56,11 @@ class Checkout(BaseCommand):
         
 
     def run(self):
+        if not self.commit:
+            if not len(self.target_submodules):
+                # Re-checkout the current branch:
+                self.commit = self.get_repo().current_branch()
+
         if self.target_submodules:
             self.checkout_submodules()
         else:
@@ -115,13 +117,11 @@ class Checkout(BaseCommand):
                    'track': self.options.track,
                    'force': self.options.force }
 
-        if not subm.branch_exists(preferred_branch):
-            # This is for the case of checking out an existing branch in the root, but
-            # the corresponding branch doesn't exist in the submodule (e.g. the submodule
-            # was just added to the root).
-            kwargs['new_branch'] = preferred_branch
-            
-        
+        # Can't add new_branch here, because the branch may get created in some cases before trying to
+        # check it out
+        #if not subm.branch_exists(preferred_branch):
+        #   kwargs['new_branch'] = preferred_branch
+
         try:
             if subm.is_detached():
                 self.groot.log("# Submodule %s is detached, looking for alternative checkout" % (subm.rel_path))
@@ -129,10 +129,14 @@ class Checkout(BaseCommand):
                 if subm.is_at_head():
                     self.groot.log("# Submodule commit is at the head of branch '%s' --> checking out branch" %
                                    (preferred_branch))
+                    if not subm.branch_exists(preferred_branch):
+                        kwargs['new_branch'] = preferred_branch
                     subm.checkout(preferred_branch,**kwargs)
                 elif self.options.force:
                     self.groot.log("# Submodule commit is not the head of branch '%s' --> forcing checkout of branch" %
                                    (preferred_branch))
+                    if not subm.branch_exists(preferred_branch):
+                        kwargs['new_branch'] = preferred_branch
                     subm.checkout(preferred_branch,**kwargs)
                 else:
                     self.groot.log("# Submodule commit is not the head of branch '%s' --> Leaving detached" %
@@ -142,6 +146,8 @@ class Checkout(BaseCommand):
                 if preferred_branch and subm.current_branch() != preferred_branch:
                     self.groot.log("# Switching submodule %s to branch: %s" %
                                    (subm.rel_path,preferred_branch))
+                    if not subm.branch_exists(preferred_branch):
+                        kwargs['new_branch'] = preferred_branch
                     subm.checkout(preferred_branch,**kwargs)
 
                 else:

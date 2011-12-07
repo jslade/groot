@@ -34,11 +34,8 @@ class Clone(BaseCommand):
     def run(self):
         self.clone_repo()
 
-        # Originally I thought it would make sense for clone to also automatically
-        # do a 'checkout', to get the submodules checked out on a branch as well, instead
-        # of having them in detached-head state. But I've reconsidered and think that
-        # should be a separate, explicit operation after the clone is done.
-        #self.checkout_submodules()
+        if self.options.branch:
+            self.checkout_submodules(self.options.branch)
 
 
     def clone_repo(self):
@@ -65,5 +62,11 @@ class Clone(BaseCommand):
 
         repo = Repo(self.groot,None)
         repo.do_git(clone)
+
+
+
+    def checkout_submodules(self,branch):
+        self.groot.warning("-W- Not implemented: checkout branch after clone")
+
 
 

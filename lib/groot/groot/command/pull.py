@@ -37,14 +37,17 @@ class Pull(BaseCommand,CommitMessages):
 
         self.options, self.args = op.parse_args(args)
 
+        self.remote = None
+        self.refspecs = []
+        if len(self.args) > 0:
+            self.remote = self.args[0]
+            if len(self.args) > 1:
+                self.refspecs = self.args[1:]
+
 
     def pull_args(self,subm):
         args = []
         o = self.options
-
-        # Get submodule-specific options
-        if subm:
-            pass
 
         if o.quiet: args += ['--quiet']
         if o.verbose: args += ['--verbose']
@@ -58,19 +61,30 @@ class Pull(BaseCommand,CommitMessages):
         if o.rebase: args += ['--rebase']
         if o.commit: args += ['--commit']
         else: args += ['--no-commit']
-        
+
         if subm:
-            if not o.all:
-                args += [subm.preferred_remote()]
-                branch = subm.current_branch()
-                if not branch: branch = subm.preferred_branch()
-                if branch:
-                    args += [branch]
+            args += self.pull_submodule_args(subm)
         else:
             args += self.args
 
         return args
+
+    
+    def pull_submodule_args(self,subm):
+        """ When pulling in a submodule, doesn't necessarily make sense to use the same
+            remote and refspecs as for the root, but maybe...
+
+            The default behavior for submodules is to pull everything from the default
+            remote. If the user needs to do something other than that, they have to
+            do expliciy git pulls instead of using groot.
+
+            To pull everything from the default remote -- have to have a default remote
+            configured. """
+
+        # TODO: ...
+        return []
         
+            
 
     def run(self):
         """ Run pull in each submodule, then at the root """
