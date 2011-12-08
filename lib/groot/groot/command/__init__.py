@@ -1,5 +1,6 @@
 
 from add import *
+from aliased import *
 from branch import *
 from checkout import *
 from cherry_pick import *
@@ -14,8 +15,6 @@ from log import *
 from merge import *
 from pull import *
 from push import *
-from rebase import *
-from reset import *
 from stash import *
 from status import *
 from submodule import *
