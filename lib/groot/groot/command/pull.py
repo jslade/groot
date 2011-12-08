@@ -111,7 +111,7 @@ class Pull(BaseCommand,CommitMessages):
         self.added_submodules = []
         
         for subm in self.get_submodules():
-            subm.banner()
+            subm.banner(deferred=True,tick=True)
             
             at_head_before = subm.is_at_head()
             self.groot.debug("# At head of '%s' before pull? %s" %
@@ -132,15 +132,18 @@ class Pull(BaseCommand,CommitMessages):
         pull = ['pull']
         pull += self.pull_args(subm)
         
-        stdout = subm.do_git(pull)
+        stdout = subm.do_git(pull,capture=True)
 
-        #if stdout: #and \
-        #       #(self.options.verbose or \
-        #        #not self.submodule_is_clean(stdout)):
-        #self.groot.log(stdout,deferred=True)
-        #else:
-        #    self.groot.log("# Nothing to pull",deferred=True)
-            
+        if stdout and \
+           (self.options.verbose or \
+            not self.submodule_is_clean(stdout)):
+            self.groot.log(stdout)
+
+
+    def submodule_is_clean(self,stdout):
+        m = re.search("Current branch .+ is up to date.",stdout)
+        if m: return True
+        
         
     def add_submodule(self,subm):
         add = ['add',subm.rel_path]

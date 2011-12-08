@@ -53,14 +53,18 @@ class Repo(object):
         git_command = ['git']
         git_command.extend(command)
         return self.git.do_command(git_command,**kwargs)
+
+
+    def last_git_result(self):
+        return self.git.last_result
     
 
     def exists(self):
         return os.path.exists(self.path)
 
 
-    def banner(self,msg=None,deferred=False):
-        self.groot.log("\n# ---[ %s ]---" % (self.banner_path()),deferred=deferred)
+    def banner(self,msg=None,deferred=False,tick=False):
+        self.groot.log("\n# ---[ %s ]---" % (self.banner_path()),deferred=deferred,tick=tick)
         if msg:
             self.groot.log(msg,deferred=deferred)
 

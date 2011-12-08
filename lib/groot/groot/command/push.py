@@ -3,6 +3,9 @@ from optparse import OptionParser
 
 from base import *
 
+import re
+
+
 class Push(BaseCommand):
     """ Push changes in all repositories (recursively) to the remote
 
@@ -60,13 +63,25 @@ class Push(BaseCommand):
 
     def push_submodules(self):
         for subm in self.get_submodules():
-            subm.banner()
+            subm.banner(deferred=True,tick=True)
 
             push = ['push']
             push += self.push_args()
 
-            subm.do_git(push)
+            subm.do_git(push,capture_all=True)
+            stdout, stderr, returncode = subm.last_git_result()
+            
+            if (stdout or stderr) and \
+               (self.options.verbose or \
+                not self.submodule_is_clean(stdout,stderr)):
+                self.groot.log(stdout)
+                self.groot.warning(stderr)
 
+
+    def submodule_is_clean(self,stdout,stderr):
+        m = re.search("Everything up-to-date",stderr)
+        if m: return True
+    
 
     def push_root(self):
         root = self.get_repo()

@@ -25,7 +25,10 @@ class Status(BaseCommand):
         
 
     def run(self):
-        self.root_status()
+        if self.root_status() \
+               and not self.options.verbose:
+            return
+        
         for subm in self.get_submodules():
             self.submodule_status(subm)
         #self.root_footer()
@@ -39,8 +42,15 @@ class Status(BaseCommand):
         if self.options.short: status.append('--short')
         status.extend(self.args)
 
-        root.do_git(status)
+        stdout = root.do_git(status,capture=True,tty=True)
+        print stdout
+        return self.root_is_clean(stdout)
 
+
+    def root_is_clean(self,stdout):
+        m = re.search("nothing to commit \(working directory clean\)",stdout)
+        if m: return True
+        
 
     def root_footer(self):
         root = self.get_repo()
@@ -48,6 +58,8 @@ class Status(BaseCommand):
         
 
     def submodule_status(self,subm):
+        subm.banner(deferred=True)
+        
         if not subm.exists():
             self.groot.warning("-W- Missing submodule: %s" % (subm.rel_path))
             return
@@ -62,8 +74,7 @@ class Status(BaseCommand):
         if stdout and \
                (self.options.verbose or \
                 not self.submodule_is_clean(stdout)):
-            subm.banner()
-            print stdout
+            self.groot.log(stdout)
 
 
     def submodule_is_clean(self,stdout):
