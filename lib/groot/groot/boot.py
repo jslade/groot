@@ -54,7 +54,7 @@ class Groot(object):
         self.log_deferred.append((sys.stdout,msg))
         if tick: self.tick()
       else:
-        self.stop_ticking()
+        self.flush_log()
         print(msg)
       
   def debug(self,msg,deferred=False):
@@ -62,21 +62,21 @@ class Groot(object):
       if deferred:
         self.log_deferred.append((sys.stdout,msg))
       else:
-        self.stop_ticking()
+        self.flush_log()
         print(msg)
       
   def warning(self,msg,deferred=False):
     if deferred:
       self.log_deferred.append((sys.stderr,msg))
     else:
-      self.stop_ticking()
+      self.flush_log()
       print >> sys.stderr, msg
       
   def error(self,msg,deferred=False):
     if deferred:
       self.log_deferred.append((sys.stderr,msg))
     else:
-      self.stop_ticking()
+      self.flush_log()
       print >> sys.stderr, msg
 
 
@@ -88,16 +88,16 @@ class Groot(object):
 
 
   def stop_ticking(self):
-    if self.ticking:
       self.ticking=False
-      sys.stdout.write("\n")
 
 
   def clear_log(self):
     self.log_deferred = []
-
+    self.stop_ticking()
+    
 
   def flush_log(self):
+    if self.ticking: print('')
     for log in self.log_deferred:
       fh, msg = log
       print >> fh, msg
