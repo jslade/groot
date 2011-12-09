@@ -25,15 +25,10 @@ class Status(BaseCommand):
         
 
     def run(self):
-        if self.root_status() \
-               and not self.options.verbose:
-            return
-        
+        self.root_status()
         for subm in self.get_submodules():
             self.submodule_status(subm)
-        #self.root_footer()
         
-
     def root_status(self):
         root = self.get_repo()
         root.banner()
@@ -44,13 +39,7 @@ class Status(BaseCommand):
 
         stdout = root.do_git(status,capture=True,tty=True)
         print stdout
-        return self.root_is_clean(stdout)
 
-
-    def root_is_clean(self,stdout):
-        m = re.search("nothing to commit \(working directory clean\)",stdout)
-        if m: return True
-        
 
     def root_footer(self):
         root = self.get_repo()
