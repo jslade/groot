@@ -97,17 +97,33 @@ class Pull(BaseCommand,CommitMessages):
 
     def require_clean(self):
         """ Require that the repos are all 'clean' before pulling """
-        root = self.get_repo()
-        if not root.is_clean():
-            self.groot.fatal("-E- There are uncommitted changes. Repo must be clean before pulling")
-            
+
+        self.groot.log("# Checking that repository is clean...")
+        clean = True
+        for subm in self.get_submodules():
+            subm.banner(deferred=True,tick=True)
+            if not subm.is_clean():
+                self.groot.error("-E- There are uncommitted changes.")
+                clean = False
+
+        if clean:
+            self.groot.clear_log()
+            root = self.get_repo()
+            if not root.is_clean(ignore_submodules=True):
+                self.groot.error("-E- There are uncommitted changes.")
+                clean = False
+
+        if not clean:
+            self.groot.fatal("-E- The repo must be clean before pulling")
+
             
     def pull_submodules(self):
         """ Run pull in each submodule
         
 
         """
-
+        self.groot.log("# Starting pull")
+        
         self.added_submodules = []
         
         for subm in self.get_submodules():

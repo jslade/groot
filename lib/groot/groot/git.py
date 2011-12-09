@@ -167,20 +167,25 @@ class Git(object):
         return sys.stdout.isatty()
 
 
-    def is_clean(self):
+    def is_clean(self,**kwargs):
         """ Returns true if both the index and working tree are clean """
-        return self.is_index_clean() and self.is_working_tree_clean()
+        return self.is_index_clean(**kwargs) and self.is_working_tree_clean(**kwargs)
 
 
-    def is_index_clean(self):
-        self.do_command(['git','diff-index','--cached','--quiet','HEAD'],
-                        expected_returncode=[0,1])
+    def is_index_clean(self,**kwargs):
+        cmd = ['git','diff-index','--cached','--quiet']
+        if 'ignore_submodules' in kwargs and kwargs['ignore_submodules']:
+            cmd += ['--ignore-submodules']
+        cmd += ['HEAD']
+        self.do_command(cmd,expected_returncode=[0,1])
         return self.last_result[2] == 0
 
 
-    def is_working_tree_clean(self):
-        self.do_command(['git','diff-files','--quiet'],
-                        expected_returncode=[0,1])
+    def is_working_tree_clean(self,**kwargs):
+        cmd = ['git','diff-files','--quiet']
+        if 'ignore_submodules' in kwargs and kwargs['ignore_submodules']:
+            cmd += ['--ignore-submodules']
+        self.do_command(cmd,expected_returncode=[0,1])
         return self.last_result[2] == 0
         
         

@@ -64,6 +64,7 @@ class Repo(object):
 
 
     def banner(self,msg=None,deferred=False,tick=False):
+        self.groot.clear_log()
         self.groot.log("\n# ---[ %s ]---" % (self.banner_path()),deferred=deferred,tick=tick)
         if msg:
             self.groot.log(msg,deferred=deferred)
@@ -92,14 +93,14 @@ class Repo(object):
         return self.do_git(git_command)
         
 
-    def is_clean(self):
-        return self.git.is_clean()
+    def is_clean(self,**kwargs):
+        return self.git.is_clean(**kwargs)
 
-    def is_index_clean(self):
-        return self.git.is_index_clean()
+    def is_index_clean(self,**kwargs):
+        return self.git.is_index_clean(**kwargs)
     
-    def is_working_tree_clean(self):
-        return self.git.is_working_tree_clean()
+    def is_working_tree_clean(self,**kwargs):
+        return self.git.is_working_tree_clean(**kwargs)
     
 
     def is_detached(self):
