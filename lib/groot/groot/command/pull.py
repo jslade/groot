@@ -76,12 +76,43 @@ class Pull(BaseCommand,CommitMessages):
 
             The default behavior for submodules is to pull everything from the default
             remote. If the user needs to do something other than that, they have to
-            do expliciy git pulls instead of using groot.
+            do explicit git pulls instead of using groot.
 
             To pull everything from the default remote -- have to have a default remote
             configured. """
 
-        # TODO: ...
+        # Make sure the branch is configured for tracking a remote branch
+        remote=None
+        merge=None
+        branch = subm.current_branch()
+        
+        cfg = ['config','branch.%s.remote' % (branch)]
+        stdout = subm.do_git(cfg,capture=True,expected_returncode=[0,1])
+        if subm.git.last_result[2] == 0:
+            remote = stdout.strip()
+            self.groot.debug("# Got branch %s remote=%s" % (branch,remote))
+
+        if remote:
+            cfg = ['config','branch.%s.merge' % (branch)]
+            stdout = subm.do_git(cfg,capture=True,expected_returncode=[0,1])
+            if subm.git.last_result[2] == 0:
+                merge = stdout.strip()
+            
+
+        if not(remote and merge):
+            self.groot.warning("-W- Upstream for local branch %s is not already defined.")
+            remote_branch = subm.git.find_remote_branch(branch,remote)
+            if not remote_branch:
+                self.groot.error("-E- Can't find remote branch %s" % (branch))
+                
+
+            remote = remote_branch.remote
+            remote_branch = remote_branch.name
+            
+            self.groot.log("# Setting upstream for local branch %s to %s/%s" % (branch,remote,remote_branch))
+            subm.do_git(['branch','--set-upstream',branch,'%s/%s' % (remote,remote_branch)])
+            
+            
         return []
         
             
@@ -148,11 +179,12 @@ class Pull(BaseCommand,CommitMessages):
         pull = ['pull']
         pull += self.pull_args(subm)
         
-        stdout = subm.do_git(pull,capture=True)
+        stdout = subm.do_git(pull,capture_all=True)
 
         if stdout and \
            (self.options.verbose or \
             not self.submodule_is_clean(stdout)):
+            if subm.git.last_result[1]: self.groot.error(subm.git.last_result[1])
             self.groot.log(stdout)
 
 
