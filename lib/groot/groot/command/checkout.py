@@ -74,7 +74,7 @@ class Checkout(BaseCommand):
                 self.groot.warning("-W- No such submodule: %s" % (subm_name))
                 continue
 
-            subm.banner()
+            subm.banner(deferred=True,tick=True)
             if self.update_submodule(subm):
                 self.checkout_matching(subm,self.commit)
             
@@ -85,7 +85,7 @@ class Checkout(BaseCommand):
             update and checkout each submodule """
         self.checkout_root()
         for subm in self.get_submodules():
-            subm.banner()
+            subm.banner(deferred=True,tick=True)
             if self.update_submodule(subm):
                 self.checkout_matching(subm)
 
@@ -126,21 +126,22 @@ class Checkout(BaseCommand):
             if subm.is_detached():
                 self.groot.log("# Submodule %s is detached, looking for alternative checkout" % (subm.rel_path))
 
+                current = subm.get_current_commit()[0:8]
                 if subm.is_at_head():
-                    self.groot.log("# Submodule commit is at the head of branch '%s' --> checking out branch" %
-                                   (preferred_branch))
+                    self.groot.log("# Submodule commit %s is at the head of branch '%s' --> checking out branch" %
+                                   (current,preferred_branch))
                     if not subm.branch_exists(preferred_branch):
                         kwargs['new_branch'] = preferred_branch
                     subm.checkout(preferred_branch,**kwargs)
                 elif self.options.force:
-                    self.groot.log("# Submodule commit is not the head of branch '%s' --> forcing checkout of branch" %
-                                   (preferred_branch))
+                    self.groot.log("# Submodule commit %s is not the head of branch '%s' --> forcing checkout of branch" %
+                                   (current,preferred_branch))
                     if not subm.branch_exists(preferred_branch):
                         kwargs['new_branch'] = preferred_branch
                     subm.checkout(preferred_branch,**kwargs)
                 else:
-                    self.groot.log("# Submodule commit is not the head of branch '%s' --> Leaving detached" %
-                                   (preferred_branch))
+                    self.groot.log("# Submodule commit %s is not the head of branch '%s' --> Leaving detached" %
+                                   (current,preferred_branch))
                     
             else:
                 if preferred_branch and subm.current_branch() != preferred_branch:
@@ -151,7 +152,8 @@ class Checkout(BaseCommand):
                     subm.checkout(preferred_branch,**kwargs)
 
                 else:
-                    self.groot.log("# Submodule %s on branch: %s" % (subm.rel_path,subm.current_branch()))
+                    #self.groot.log("# Submodule %s on branch: %s" % (subm.rel_path,subm.current_branch()))
+                    pass
 
 
             if subm.is_detached():
