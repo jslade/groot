@@ -40,3 +40,8 @@ class GitBranchNotFound(Exception):
     """ Error indicating specified branch doesn't exist in the repository """
     pass
 
+
+class GitNotOnABranch(Exception):
+    """ Error indicating a submodule does not have a branch checked out """
+    pass
+

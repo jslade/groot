@@ -5,6 +5,8 @@ from tempfile import NamedTemporaryFile
 
 from base import *
 from commit import *
+from groot.err import *
+
 
 class Pull(BaseCommand,CommitMessages):
     """ Pull in changes from the remotes for all repositories (recursively)
@@ -84,7 +86,10 @@ class Pull(BaseCommand,CommitMessages):
         # Make sure the branch is configured for tracking a remote branch
         remote=None
         merge=None
+
         branch = subm.current_branch()
+        if not branch:
+            raise GitNotOnABranch()
         
         cfg = ['config','branch.%s.remote' % (branch)]
         stdout = subm.do_git(cfg,capture=True,expected_returncode=[0,1])
@@ -100,7 +105,7 @@ class Pull(BaseCommand,CommitMessages):
             
 
         if not(remote and merge):
-            self.groot.warning("-W- Upstream for local branch %s is not already defined.")
+            self.groot.warning("-W- Upstream for local branch %s is not already defined." % (branch))
             remote_branch = subm.git.find_remote_branch(branch,remote)
             if not remote_branch:
                 self.groot.error("-E- Can't find remote branch %s" % (branch))
@@ -165,13 +170,17 @@ class Pull(BaseCommand,CommitMessages):
                              (subm.preferred_branch(),at_head_before))
             commit_before = subm.get_current_commit()
 
-            self.pull_submodule(subm)
-
+            try:
+                self.pull_submodule(subm)
+            except GitNotOnABranch, ex:
+                self.groot.warning("-W- Not on a branch, skipping pull")
+                continue
+                
             at_head_after = subm.is_at_head()
             self.groot.debug("# At head of '%s' after pull? %s" %
                              (subm.preferred_branch(),at_head_before))
             
-            if at_head_before and not at_head_after:
+            if at_head_before: #and not at_head_after:
                 self.added_submodules.append((subm,commit_before))
                 
 

@@ -121,7 +121,7 @@ class Commit(BaseCommand,CommitMessages):
             self.groot.log("# At head of '%s' after commit? %s" %
                            (subm.preferred_branch(),at_head_before),deferred=True)
             
-            if at_head_before and not at_head_after:
+            if at_head_before: #and not at_head_after:
                 self.add_submodule(subm,commit_before)
 
 
