@@ -104,7 +104,7 @@ class Commit(BaseCommand,CommitMessages):
         self.groot.debug("commit_submodules: map=%s" % (map))
         
         for subm in self.get_submodules():
-            subm.banner(deferred=True)
+            subm.banner(deferred=True,tick=True)
             
             if not subm.rel_path in map:
                 self.groot.debug("# Skipping submodule: %s" % (subm.rel_path))
@@ -130,35 +130,15 @@ class Commit(BaseCommand,CommitMessages):
         commit += self.commit_args()
         commit += paths
 
-        echo=True
-        capture=False
-        if self.options.message or \
-           self.options.message_file or \
-           self.options.reedit or \
-           self.options.reuse:
-            echo=False
-            capture=True
-        
-        kwargs = { 'capture': capture,
-                   'echo': echo,
-                   'tty': capture,
-                   'expected_returncode': [0,1] }
-        stdout = subm.do_git(commit,**kwargs)
+        if subm.is_clean():
+            if self.options.verbose:
+                self.groot.log("# Nothing to commit", deferred=True)
 
-        if stdout and \
-               (self.options.verbose or \
-                not self.submodule_is_clean(stdout)):
-            self.groot.log(stdout,deferred=True)
-        else:
-            if not echo:
-                self.groot.log("# Nothing to commit",deferred=True)
+        kwargs = { 'tty': True,
+                   'expected_returncode': [0,1] }
+        subm.do_git(commit,**kwargs)
             
         
-    def submodule_is_clean(self,stdout):
-        m = re.search("nothing to commit \(working directory clean\)",stdout)
-        if m: return True
-
-
     def add_submodule(self,subm,commit_before):
         add = ['add',subm.rel_path]
         root = self.get_repo()
