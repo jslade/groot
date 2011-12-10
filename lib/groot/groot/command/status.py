@@ -47,7 +47,7 @@ class Status(BaseCommand):
         
 
     def submodule_status(self,subm):
-        subm.banner(deferred=True)
+        subm.banner(deferred=True,tick=True)
         
         if not subm.exists():
             self.groot.warning("-W- Missing submodule: %s" % (subm.rel_path))
