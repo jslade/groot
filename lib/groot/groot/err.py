@@ -13,10 +13,13 @@ class InvalidUsage(Exception):
 
 class GitCommandError(Exception):
     """ Error indicating an error when executing a git command """
-    def __init__(self,repo_path,command,msg=''):
+    def __init__(self,repo,command,msg=''):
         Exception.__init__(self,msg)
-        self.repo_path = repo_path
+        self.repo = repo
         self.command = command
+
+        last_cmd, self.args = repo.last_command
+        self.stdout, self.stderr, self.returncode = repo.last_result
 
     def command_str(self):
         import pipes

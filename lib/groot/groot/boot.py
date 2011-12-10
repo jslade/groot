@@ -18,6 +18,8 @@ class Groot(object):
     self.quiet = False
     self.debug_mode = False
     self.ticking = False
+    self.did_tick = False
+    self.errors = 0
     
     self.log_deferred = []
     
@@ -25,6 +27,7 @@ class Groot(object):
   def main(self,argv):
     self.parse_args(argv)
     self.do_cmd()
+    self.stop_ticking()
 
 
   def parse_args(self,argv):
@@ -44,7 +47,7 @@ class Groot(object):
       self.command.run()
       self.command.cleanup()
     except GitCommandError, ex:
-      self.fatal("-E- Git command failed in %s:\n%s" % (ex.repo_path,ex.command_str()))
+      self.fatal("-E- Git command failed in %s:\n%s\n%s" % (ex.repo.path,ex.command_str(),ex.stderr or ''))
       
   
 
@@ -73,6 +76,8 @@ class Groot(object):
       print >> sys.stderr, msg
       
   def error(self,msg,deferred=False):
+    self.errors += 1
+    
     if deferred:
       self.log_deferred.append((sys.stderr,msg))
     else:
@@ -83,21 +88,28 @@ class Groot(object):
   def tick(self):
     if sys.stdout.isatty():
       self.ticking = True
-      sys.stdout.write('.')
-      sys.stdout.flush()
+      # The actual 'tick' doesn't happen until the log is cleared
+      #sys.stdout.write('.')
+      #sys.stdout.flush()
 
 
   def stop_ticking(self):
       self.ticking=False
-
-
+      if self.did_tick:
+        print('') # Force a newline
+        self.did_tick=False
+        
   def clear_log(self):
     self.log_deferred = []
-    self.stop_ticking()
-    
+    if self.ticking:
+      # Reached the end of a logging point without the log getting flushed,
+      # so now write the tick mark
+      sys.stdout.write('.')
+      sys.stdout.flush()
+      self.did_tick=True
 
   def flush_log(self):
-    if self.ticking: print('')
+    self.stop_ticking()
     for log in self.log_deferred:
       fh, msg = log
       print >> fh, msg

@@ -45,7 +45,7 @@ class Git(object):
 
 
     def do_command(self,git_command,**kwargs):
-        self.groot.debug("# In %s: %s" % (self.path,' '.join(git_command)))
+        self.groot.debug("# In %s: %s (%s)" % (self.path,' '.join(git_command),kwargs))
 
         # Run the command in the root directory of the git repo
         if self.path:
@@ -65,14 +65,7 @@ class Git(object):
         else:
             stdout, stderr, returncode = self.do_command_with_pipes(git_command,**call_args)
         self.last_result = (stdout,stderr,returncode)
-
-        # Check the result of the command
-        expected_returncode=[0]
-        if 'expected_returncode' in kwargs:
-            expected_returncode=kwargs['expected_returncode']
-        if type(expected_returncode) != type([]): expected_returncode=[expected_returncode]
-        if not returncode in expected_returncode:
-            raise GitCommandError(self.path,git_command)
+        self.last_command = (git_command,kwargs)
 
         # Some debugging output
         if self.groot.debug_mode:
@@ -82,6 +75,14 @@ class Git(object):
             if stdout:
                 for line in stdout.rstrip().split('\n'):
                     self.groot.debug("--> %s" % line)
+
+        # Check the result of the command
+        expected_returncode=[0]
+        if 'expected_returncode' in kwargs:
+            expected_returncode=kwargs['expected_returncode']
+        if type(expected_returncode) != type([]): expected_returncode=[expected_returncode]
+        if not returncode in expected_returncode:
+            raise GitCommandError(self,git_command)
 
         # Always returns stdout, which will be empty if capture=False
         return stdout
@@ -360,7 +361,10 @@ class Git(object):
         def is_ref(self):
             return self.ref is not None
         
-            
+
+        def short(self):
+            if is_ref: return self.name
+            else: return self.name[0:8]
         
 
 class GitConfig(dict):
