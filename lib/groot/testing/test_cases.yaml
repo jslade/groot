@@ -1,0 +1,9 @@
+---
+name: test1
+desc: Dummy test case
+
+---
+name: test2
+desc: Antoher dummy test case
+follows: [test1,testxx]
+

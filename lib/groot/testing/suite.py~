@@ -1,0 +1,30 @@
+
+class TestSuite(object):
+    
+    def __init__(self):
+        self.cases = {}
+
+
+
+    def add_case(self,test_case):
+        for prereq_name in test_case.prereq_names():
+            prereq = self.find_case(prereq_name)
+            test_case.add_prereq(prereq)
+
+    def find_case(self,name):
+        if not name in self.cases:
+            self.cases[name] = TestCase(name)
+
+        return self.cases[name]
+
+        
+            
+
+class TestCase(object):
+
+    def __init__(self,name):
+        self.name = name
+        self.prereqs
+
+
+    
