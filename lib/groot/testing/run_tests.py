@@ -26,7 +26,7 @@ class GrootTests(object):
         # description is a list of test cases:
         self.tests = suite.TestSuite()
         for case_desc in description:
-            print("Loaded test case: %s" % (case_desc))
+            #print("Loaded test case: %s" % (case_desc))
             case = self.tests.find_case(case_desc['name'],case_desc)
             self.tests.add_case(case)
 

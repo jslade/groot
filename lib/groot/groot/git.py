@@ -26,13 +26,15 @@ class Git(object):
         self.refs = None
         
 
-    def find_git_dir(self,path):
+    def find_git_dir(self,path,bare=False):
         """ Find the .git dir for the given git repo path """
         if not path:
             self.path = self.git_dir = None
             return
         
-        git_dir = os.path.join(path,'.git')
+        if bare: git_dir = path
+        else: git_dir = os.path.join(path,'.git')
+        
         if os.path.exists(git_dir):
             self.path = path
             self.git_dir = git_dir
@@ -44,6 +46,10 @@ class Git(object):
             self.git_dir = git_dir
 
 
+    def initialized(self):
+        return self.git_dir and os.path.exists(self.git_dir)
+
+    
     def do_command(self,git_command,**kwargs):
         self.groot.debug("# In %s: %s (%s)" % (self.path,' '.join(git_command),kwargs))
 

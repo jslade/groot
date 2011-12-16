@@ -1,16 +1,32 @@
+#
+# Groot testing suite:
+# groot tests have to operate on multiple real git repositories
+# they need both local (clones) and remote repositories
+# test cases need to have a known starting state, like certain
+#    commits, branches, modified files, etc
+# test cases need to run one or more groot / git commands
+# after running, test cases have to be able to check for expected outcomes,
+#    like new commits, branches, etc
+# commit IDs aren't fixed, so requires an alternate method for
+#    identifying commits via symbolic names
+#
 
+import subprocess
 import types
 import unittest
 import yaml
 
+import groot.git
+import groot.repo
 
-class TestSuite(object):
+
+class GrootTestSuite(object):
     
     def __init__(self):
         self.cases = {}
 
     def add_case(self,test_case):
-        """ Added a TestCase instance to the list of cases in the suite.
+        """ Add a GrootTestCase instance to the list of cases in the suite.
             Makes sure the dependencies get hooked up as well"""
         for prereq_name in test_case.prereq_names():
             prereq = self.find_case(prereq_name)
@@ -21,7 +37,7 @@ class TestSuite(object):
         
     def find_case(self,name,desc=None):
         if not name in self.cases:
-            self.cases[name] = TestCase(name,desc)
+            self.cases[name] = GrootTestCase(name,desc)
 
         if desc: self.cases[name].description = desc
             
@@ -56,8 +72,11 @@ class TestSuite(object):
         return ordered
 
 
-class TestCase(unittest.TestCase):
-    """ Test case is constructed from a dict (usually loaded from YAML) """
+class GrootTestCase(unittest.TestCase):
+    """ Test case is constructed from a dict (usually loaded from YAML).
+        This is a unittest.TestCase, so it implements runTest() to actually perform
+        the tests. But it also has functionality for ordering itself relative to other
+        tests in the suite so that it's prerequisites are met """
 
     def __init__(self,name,description=None):
         unittest.TestCase.__init__(self)
@@ -75,25 +94,73 @@ class TestCase(unittest.TestCase):
         
 
     def prereq_names(self):
+        """ Returns the list of test case names that must precede this test case.
+            Taken from the 'follows' part of the description """
         if 'follows' in self.description:
             return self.as_list(self.description['follows'])
-
         return []
 
 
     def add_prereq(self,prereq):
+        """ Add another TestCase instance as a prerequisite of this one. This is a
+            TestCase instance, created from the list returned by prereq_names() """
         self.follows.append(prereq)
 
     
-
     def as_list(self,val):
+        """ Helper method to turn a value into a list if it is not already a list """
         if type(val) == types.ListType: return val
         return [val]
 
 
-
-
     def runTest(self):
+        self.validate_input_state()
+        self.execute_commands()
+        self.validate_output_state()
+
+
+    def validate_input_state(self):
+        pass
+
+
+    def execute_commands(self):
+        pass
+
+
+    def validate_output_state(self):
         pass
 
     
+
+class TestRepo(object):
+    """ Represents a git repo used to execute tests. The main things it provides:
+        * the ability to run git commands
+        * a pseudo tagging / naming facility to give symbolic names to commits/refs
+
+        """
+
+    def __init__(self,path,bare=False,init=True):
+        self.path = path
+        self.bare = bare
+
+        self.git = groot.git.Git(path,bare)
+
+        if init:
+            self.git_init()
+            
+
+    def git_init(self):
+        # Clear out the old repo (if any) and make it fresh
+        if os.path.exists(self.path):
+            subprocess.call(["rm","-rf",self.path])
+        os.makedirs(self.path)
+        
+        init_cmd = ['git','init']
+        if self.bare: init_cmd.append('--bare')
+        self.do_cmd(init_cmd)
+    
+
+    def do_cmd(self,cmd,**kwargs):
+        self.git.do_cmd(cmd,**kwargs)
+
+        
