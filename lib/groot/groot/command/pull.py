@@ -109,14 +109,12 @@ class Pull(BaseCommand,CommitMessages):
             remote_branch = subm.git.find_remote_branch(branch,remote)
             if not remote_branch:
                 self.groot.error("-E- Can't find remote branch %s" % (branch))
-                
-
-            remote = remote_branch.remote
-            remote_branch = remote_branch.name
+            else:
+                remote = remote_branch.remote
+                remote_branch = remote_branch.name
             
-            self.groot.log("# Setting upstream for local branch %s to %s/%s" % (branch,remote,remote_branch))
-            subm.do_git(['branch','--set-upstream',branch,'%s/%s' % (remote,remote_branch)])
-            
+                self.groot.log("# Setting upstream for local branch %s to %s/%s" % (branch,remote,remote_branch))
+                subm.do_git(['branch','--set-upstream',branch,'%s/%s' % (remote,remote_branch)])
             
         return []
         
