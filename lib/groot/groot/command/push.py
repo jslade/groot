@@ -22,12 +22,12 @@ class Push(BaseCommand):
         op.add_option("--verbose","-v", action="store_true", dest="verbose")
 
         op.add_option("--all","-a", action="store_true", dest="all")
+        op.add_option("--all-branches","-A", action="store_true", dest="all_branches")
         op.add_option("--mirror", action="store_true", dest="mirror")
         op.add_option("--delete", action="store_true", dest="delete")
         op.add_option("--tags", action="store_true", dest="tags")
         op.add_option("--dry-run","-n", action="store_true", dest="dry_run")
 
-        op.add_option("--porcelain", action="store_true", dest="porcelain")
         op.add_option("--progress", action="store_true", dest="progress")
         op.add_option("--force","-f", action="store_true", dest="force")
 
@@ -35,7 +35,13 @@ class Push(BaseCommand):
         self.options, self.args = op.parse_args(args)
 
 
-    def push_args(self):
+        if len(self.args):
+            self.remote = self.args.pop(0)
+        else:
+            self.remote = None
+
+
+    def push_args(self,subm):
         args = []
         o = self.options
 
@@ -48,10 +54,20 @@ class Push(BaseCommand):
         if o.tags: args += ['--tags']
 
         if o.dry_run: args += ['--dry-run']
-        if o.porcelain: args += ['--porcelain']
         if o.progress: args += ['--progress']
         if o.force: args += ['--force']
 
+
+        if subm:
+            # When pushing a submodule, push only the current branch,
+            # otherwise, push may fail if other branches are not up to date.
+            # But to push a specific branch, have to first specify the remote.
+            # But which remote to push to? Since groot is not meant to cover
+            # all cases, just the most common operations -- push to the remote
+            # based where the submodule is cloned from.
+            if not o.all_branches:
+                args += [subm.preferred_remote(),subm.current_branch()]
+            
         return args
         
         
@@ -66,7 +82,7 @@ class Push(BaseCommand):
             subm.banner(deferred=True,tick=True)
 
             push = ['push']
-            push += self.push_args()
+            push += self.push_args(subm)
 
             subm.do_git(push,capture_all=True)
             stdout, stderr, returncode = subm.last_git_result()
@@ -88,6 +104,6 @@ class Push(BaseCommand):
         root.banner()
 
         push = ['push']
-        push += self.push_args()
+        push += self.push_args(None)
 
         root.do_git(push)
