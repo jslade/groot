@@ -24,6 +24,7 @@ class Git(object):
         self.groot = Groot.instance
         self.find_git_dir(path)
         self.refs = None
+        self.config = None
         
 
     def find_git_dir(self,path,bare=False):
@@ -189,11 +190,12 @@ class Git(object):
 
 
     def is_working_tree_clean(self,**kwargs):
-        cmd = ['git','diff-files','--quiet']
-        if 'ignore_submodules' in kwargs and kwargs['ignore_submodules']:
-            cmd += ['--ignore-submodules']
-        self.do_command(cmd,expected_returncode=[0,1])
-        return self.last_result[2] == 0
+        cmd = ['git','status','-uno','--short']
+        # TODO: Should use -z for more machine-friendly output for parsing?
+        #if 'ignore_submodules' in kwargs and kwargs['ignore_submodules']:
+        #    cmd += ['--ignore-submodules']
+        stdout = self.do_command(cmd,capture=True)
+        return stdout.strip() == ''
         
         
     def is_detached(self):
@@ -291,6 +293,15 @@ class Git(object):
 
         return self.refs
         
+
+    def get_config(self,key,default=None):
+        if not self.config:
+            self.config = GitConfig()
+            self.config.parse(os.path.join(self.git_dir,'config'))
+
+        if key in self.config: return self.config[key] or default
+        return default
+
 
     class ID(object):
         sha1_re = re.compile(r'([a-z0-9]{40})')
