@@ -171,7 +171,7 @@ class Submodule(Repo):
 
     def preferred_remote(self):
         """ Returns the name of the remote that is 'preferred' for this submodule,
-            as defined by the sumbodule.$path.origin config value in .gitmodules """
+            as defined by the submodule.$path.origin config value in .gitmodules """
         return self.remote
 
 
