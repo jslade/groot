@@ -22,7 +22,6 @@ class Push(BaseCommand):
         op.add_option("--verbose","-v", action="store_true", dest="verbose")
 
         op.add_option("--all","-a", action="store_true", dest="all")
-        op.add_option("--all-branches","-A", action="store_true", dest="all_branches")
         op.add_option("--mirror", action="store_true", dest="mirror")
         op.add_option("--delete", action="store_true", dest="delete")
         op.add_option("--tags", action="store_true", dest="tags")
@@ -65,7 +64,7 @@ class Push(BaseCommand):
             # But which remote to push to? Since groot is not meant to cover
             # all cases, just the most common operations -- push to the remote
             # based where the submodule is cloned from.
-            if not o.all_branches:
+            if not o.all:
                 args += [subm.preferred_remote(),subm.current_branch()]
             
         return args
