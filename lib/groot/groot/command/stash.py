@@ -38,9 +38,14 @@ class Stash(BaseCommand):
                 
         
     def run(self):
-        if self.command == 'save':
-            stash_tag = self.save_root()
-            self.save_submodules(stash_tag)
+        self.get_repo()
+        
+        if self.command == 'save' or \
+           self.command == 'create':
+            dirty_submodules, dirty_root = self.find_dirty()
+            if len(dirty_submodules) or dirty_root:
+                stash_tag = self.save_root()
+                self.save_submodules(stash_tag,dirty_submodules)
 
         elif self.command in ['pop','apply','drop']:
             stash_tag = self.pop_root()
@@ -54,13 +59,34 @@ class Stash(BaseCommand):
 
 
 
+    def find_dirty(self):
+        """ Check if there's anything to stash before starting """
+        self.groot.log("# Finding changes to stash...")
+        dirty_submodules = []
+        for subm in self.get_submodules():
+            subm.banner(deferred=True,tick=True)
+            if not subm.is_clean():
+                dirty_submodules.append(subm)
+
+        self.groot.clear_log()
+        root = self.get_repo()
+        dirty_root = not root.is_clean(ignore_submodules=True)
+
+        return (dirty_submodules,dirty_root)
+            
+
+
+        
     def save_root(self):
-        """ Run stash save in the root, and return the tag  """
+        """ Run stash save in the root, and return the tag.
+        """
         root = self.get_repo()
         root.banner()
 
         # Generate a stash ID used to tag corresponding stashes
-        tag = '[groot-%s]' % (random_string())
+        rand = random_string()
+        tag = '[groot-%s]' % (rand)
+        self.groot.debug("# Creating stash using tag: %s" % (tag))
 
         # The tag needs to go into the message. If no message is
         # given already, have to manually generate one to include
@@ -72,6 +98,17 @@ class Stash(BaseCommand):
             message = "%s %s" % (sha1[0:7],rest)
 
 
+        # If nothing is changed in the root (a common scenario), have to force
+        # the stash to be created so that it can contain the stash tag for later popping.
+        # This is done by creating a dummy file and adding it to the index.
+        # Nothing has to go into the file, it just has to exist.
+        dummy_path = "groot-stash-%s.txt" % (rand)
+        self.groot.debug("# Creating stash dummy file in root: %s" % (dummy_path))
+        fh = open(os.path.join(root.path,dummy_path),'w')
+        fh.close()
+        root.do_git(['add',dummy_path])
+        
+        
         # Do the stash
         save = ['stash','save']
         save += self.options_list
@@ -83,11 +120,11 @@ class Stash(BaseCommand):
         return tag
 
 
-    def save_submodules(self,tag):
+    def save_submodules(self,tag,dirty_submodules):
         """ Run stash save in each submodule, using the given tag
             in the stash message """
 
-        for subm in self.get_submodules():
+        for subm in dirty_submodules:
             subm.banner()
 
             # The tag needs to go into the message. If no message is
@@ -135,18 +172,30 @@ class Stash(BaseCommand):
             stash = self.args[0]
 
         # Extract the tag from the message for that stash:
+        tag = None
         for line in list_output.split("\n"):
             m = re.match(r"(stash@[^:]+): .*\[(groot-.+)\]",line)
-            print("extract tag: line=%s" % (line))
-            if m: print("    m[1]=%s m[2]=%s" %(m.group(1),m.group(2)))
             if m and m.group(1) == stash:
+                self.groot.debug("# extract tag: line=%s" % (line))
                 tag = m.group(2)
                 self.groot.debug("# groot pop stash=%s tag=%s" % (stash,tag))
-                return tag
+                break
 
-        self.groot.warning("-W- Couldn't find a groot stash tag for %s" % (stash) +
-                           ", not performing '%s' in submodules" % (self.command))
-        return None
+        if not tag:
+            self.groot.warning("-W- Couldn't find a groot stash tag for %s" % (stash) +
+                               ", not performing '%s' in submodules" % (self.command))
+            return None
+
+        
+        # Remove the dummy file from the index and from the work dir
+        g, rand = tag.split('-')
+        dummy_path = "groot-stash-%s.txt" % (rand)
+        full_dummy_path = os.path.join(root.path,dummy_path)
+        if os.path.exists(full_dummy_path):
+            root.do_git(['reset','HEAD',dummy_path])
+            os.remove(full_dummy_path)
+            
+        return tag
 
         
     def pop_submodules(self,tag):
@@ -155,7 +204,7 @@ class Stash(BaseCommand):
         if not tag: return
 
         for subm in self.get_submodules():
-            subm.banner()
+            subm.banner(deferred=True)
 
             # Get the list of all stash, find the one matching the given tag:
             stash = None
@@ -167,7 +216,7 @@ class Stash(BaseCommand):
                     break
 
             if not stash:
-                self.groot.log("# No matching stash tagged as '%s'" % (tag))
+                self.groot.debug("# No matching stash tagged as '%s'" % (tag))
                 continue
 
             # Pop/apply the specific stash in this submodule
