@@ -1,3 +1,5 @@
+*This project is defunct... it was **not** a success* :)
+
 Motivation
 ==========
 
